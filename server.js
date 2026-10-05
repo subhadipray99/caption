@@ -260,26 +260,99 @@ app.post("/api/projects", upload.single("video"), async (req, res) => {
   res.json(p);
 });
 
-app.get("/api/projects", (req, res) => {
-  const list = fs
-    .readdirSync(PROJECTS_DIR)
-    .filter((id) => validId(id) && fs.existsSync(projFile(id)))
-    .map((id) => {
-      const { captions, ...meta } = load(id);
-      return { ...meta, captionCount: captions.length };
-    })
-    .sort((a, b) => b.createdAt - a.createdAt);
-  res.json(list);
+app.get("/api/projects", async (req, res) => {
+  try {
+    const list = fs
+      .readdirSync(PROJECTS_DIR)
+      .filter((id) => validId(id) && fs.existsSync(projFile(id)))
+      .map((id) => {
+        const { captions, ...meta } = load(id);
+        return { ...meta, captionCount: (captions || []).length };
+      });
+
+    // Merge with Supabase projects if available
+    if (process.env.SUPABASE_URL) {
+      const { data: supaProjects } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+      if (supaProjects && supaProjects.length > 0) {
+        for (const sp of supaProjects) {
+          if (!list.some(p => p.id === sp.id)) {
+            list.push({
+              id: sp.id,
+              name: sp.name,
+              video: path.basename(sp.video_storage_path || "source.mp4"),
+              videoR2Key: sp.video_storage_path,
+              videoUrl: sp.video_url,
+              createdAt: new Date(sp.created_at).getTime(),
+              status: sp.status,
+              progress: sp.progress || 0,
+              language: sp.language,
+              targetLang: sp.target_lang,
+              error: sp.error,
+              captionCount: (sp.captions || []).length,
+              exportFile: sp.export_file_url ? "captioned.mp4" : null,
+              exportUrl: sp.export_file_url,
+              exportedAt: sp.exported_at ? new Date(sp.exported_at).getTime() : null,
+            });
+          }
+        }
+      }
+    }
+
+    list.sort((a, b) => b.createdAt - a.createdAt);
+    res.json(list);
+  } catch (err) {
+    console.warn("GET /api/projects error:", err.message);
+    res.json([]);
+  }
 });
 
 app.param("id", (req, res, next, id) => {
-  if (!validId(id) || !fs.existsSync(projFile(id))) return res.status(404).json({ error: "Not found" });
+  if (!validId(id)) return res.status(404).json({ error: "Invalid ID" });
   next();
 });
 
-app.get("/api/projects/:id", (req, res) => res.json(load(req.params.id)));
+app.get("/api/projects/:id", async (req, res) => {
+  const id = req.params.id;
+  if (fs.existsSync(projFile(id))) {
+    return res.json(load(id));
+  }
+  // Fallback: Restore project metadata from Supabase
+  if (process.env.SUPABASE_URL) {
+    const { data: sp } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
+    if (sp) {
+      const p = {
+        id: sp.id,
+        name: sp.name,
+        video: path.basename(sp.video_storage_path || "source.mp4"),
+        videoR2Key: sp.video_storage_path,
+        videoUrl: sp.video_url,
+        createdAt: new Date(sp.created_at).getTime(),
+        status: sp.status,
+        progress: sp.progress || 0,
+        language: sp.language,
+        targetLang: sp.target_lang,
+        error: sp.error,
+        captions: sp.captions || [],
+        style: sp.style,
+        exportFile: sp.export_file_url ? "captioned.mp4" : null,
+        exportUrl: sp.export_file_url,
+        exportedAt: sp.exported_at ? new Date(sp.exported_at).getTime() : null,
+      };
+      fs.mkdirSync(projDir(id), { recursive: true });
+      fs.writeFileSync(projFile(id), JSON.stringify(p, null, 2));
+      return res.json(p);
+    }
+  }
+  res.status(404).json({ error: "Not found" });
+});
 
-app.get("/api/projects/:id/video", (req, res) => res.sendFile(path.join(projDir(req.params.id), load(req.params.id).video)));
+app.get("/api/projects/:id/video", async (req, res) => {
+  const p = fs.existsSync(projFile(req.params.id)) ? load(req.params.id) : null;
+  if (p && p.videoUrl) return res.redirect(p.videoUrl);
+  const localVid = path.join(projDir(req.params.id), p?.video || "source.mp4");
+  if (fs.existsSync(localVid)) return res.sendFile(localVid);
+  res.status(404).json({ error: "Video not found" });
+});
 
 app.get("/api/projects/:id/peaks", (req, res) => {
   const f = path.join(projDir(req.params.id), "peaks.json");
