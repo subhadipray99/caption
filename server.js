@@ -480,10 +480,16 @@ async function transcribe(id, targetLang = "auto") {
   if (targetLang === "hinglish") {
     update(id, { status: "converting_hinglish" });
     const openrouterKey = process.env.OPENROUTER_API_KEY;
-    try {
-      finalCaptions = await convertHindiToHinglish(finalCaptions, openrouterKey);
-    } catch (hinglishErr) {
-      console.warn("Hinglish conversion warning:", hinglishErr.message);
+    if (!openrouterKey) {
+      console.warn("OPENROUTER_API_KEY is missing from environment! Hinglish conversion cannot run without it.");
+    } else {
+      try {
+        console.log(`Starting Hinglish transliteration for project ${id} with OpenRouter...`);
+        finalCaptions = await convertHindiToHinglish(finalCaptions, openrouterKey);
+        console.log(`Hinglish transliteration successful for project ${id}`);
+      } catch (hinglishErr) {
+        console.error("Hinglish conversion error:", hinglishErr.message);
+      }
     }
   }
 
