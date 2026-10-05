@@ -356,7 +356,11 @@ app.get("/api/projects/:id/video", async (req, res) => {
 
 app.get("/api/projects/:id/peaks", (req, res) => {
   const f = path.join(projDir(req.params.id), "peaks.json");
-  fs.existsSync(f) ? res.sendFile(f) : res.status(404).json({ error: "No waveform" });
+  if (fs.existsSync(f)) {
+    return res.sendFile(f);
+  }
+  // If not yet generated, return clean empty structure instead of 404 error
+  res.json({ rate: 100, peaks: [] });
 });
 
 app.put("/api/projects/:id", (req, res) => {
