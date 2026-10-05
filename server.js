@@ -402,6 +402,13 @@ async function transcribe(id, targetLang = "auto") {
   const dir = projDir(id);
   const p = load(id);
   const audio = path.join(dir, "audio.mp3");
+  const localVideoPath = path.join(dir, p.video);
+
+  // If local video doesn't exist on disk (due to ephemeral restart), download it from R2
+  if (!fs.existsSync(localVideoPath) && p.videoR2Key && r2Configured) {
+    fs.mkdirSync(dir, { recursive: true });
+    await downloadFileFromR2(p.videoR2Key, localVideoPath);
+  }
 
   // 16 kHz mono speech audio is all the model needs and keeps uploads small.
   await runFfmpeg(["-i", p.video, "-vn", "-ac", "1", "-ar", "16000", "-b:a", "64k", "audio.mp3"], { cwd: dir });

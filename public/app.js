@@ -367,9 +367,11 @@ $("#startTranscribeBtn").onclick = startTranscribe;
 $("#retryBtn").onclick = startTranscribe;
 
 // Poll while anything is processing.
+let isPolling = false;
 setInterval(async () => {
   const anyBusy = state.projects.some((p) => BUSY.includes(p.status)) || (state.current && BUSY.includes(state.current.status));
-  if (!anyBusy) return;
+  if (!anyBusy || isPolling) return;
+  isPolling = true;
   try {
     await loadProjects();
     if (state.current) {
@@ -377,7 +379,10 @@ setInterval(async () => {
       applyStatus(p);
     }
   } catch {}
-}, 1500);
+  finally {
+    isPolling = false;
+  }
+}, 3000);
 
 // ---------------- player layout ----------------
 function layoutPlayer() {
