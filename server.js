@@ -373,11 +373,17 @@ app.put("/api/projects/:id", (req, res) => {
 });
 
 app.delete("/api/projects/:id", async (req, res) => {
-  fs.rmSync(projDir(req.params.id), { recursive: true, force: true });
-  if (process.env.SUPABASE_URL) {
-    await supabase.from("projects").delete().eq("id", req.params.id).catch(() => {});
+  try {
+    const id = req.params.id;
+    try { fs.rmSync(projDir(id), { recursive: true, force: true }); } catch {}
+    if (process.env.SUPABASE_URL) {
+      await supabase.from("projects").delete().eq("id", id).catch(() => {});
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ error: "Failed to delete: " + err.message });
   }
-  res.json({ ok: true });
 });
 
 // ---------- transcription (Sarvam Batch STT, saaras:v4) ----------
