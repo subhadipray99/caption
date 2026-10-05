@@ -377,12 +377,12 @@ app.delete("/api/projects/:id", async (req, res) => {
     const id = req.params.id;
     try { fs.rmSync(projDir(id), { recursive: true, force: true }); } catch {}
     if (process.env.SUPABASE_URL) {
-      await supabase.from("projects").delete().eq("id", id).catch(() => {});
+      await supabase.from("projects").delete().eq("id", id);
     }
     res.json({ ok: true });
   } catch (err) {
     console.error("Delete error:", err);
-    res.status(500).json({ error: "Failed to delete: " + err.message });
+    res.status(500).json({ error: "Failed to delete: " + (err.message || String(err)) });
   }
 });
 
