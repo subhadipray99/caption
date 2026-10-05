@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Caption Studio</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Auto-detect backend API URL or read from localStorage / query / default relative
+    window.API_BASE = localStorage.getItem("CAPTION_API_BASE") || window.__CAPTION_API_BASE__ || "";
+  </script>
 </head>
 <body>
   <header class="topbar">

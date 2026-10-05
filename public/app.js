@@ -55,8 +55,10 @@ function fmt(t, cs = true) {
   const base = (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   return cs ? base + "." + String(c).padStart(2, "0") : base;
 }
+const API_BASE = window.API_BASE || "";
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
     ...opts,
     headers: opts.body && !(opts.body instanceof FormData) ? { "Content-Type": "application/json" } : undefined,
   });
@@ -246,7 +248,7 @@ async function openProject(id) {
   state.lastExportedAt = p.exportedAt || null;
   $("#stageEmpty").hidden = true;
   player.hidden = false;
-  video.src = `/api/projects/${id}/video`;
+  video.src = p.videoUrl || `${API_BASE}/api/projects/${id}/video`;
   $("#projectTitle").innerHTML = "";
   const b = document.createElement("b");
   b.textContent = p.name;
@@ -310,7 +312,7 @@ function applyStatus(p) {
     // Export finished.
     if (p.exportedAt && p.exportedAt !== state.lastExportedAt) {
       state.lastExportedAt = p.exportedAt;
-      location.href = `/api/projects/${p.id}/download`;
+      location.href = p.exportUrl || `${API_BASE}/api/projects/${p.id}/download`;
     }
     Object.assign(state.current, { ...p, captions: undefined });
   }
