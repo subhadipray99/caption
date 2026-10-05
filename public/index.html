@@ -7,8 +7,10 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <script>
-    // Auto-detect backend API URL or read from localStorage / query / default relative
-    window.API_BASE = localStorage.getItem("CAPTION_API_BASE") || window.__CAPTION_API_BASE__ || "";
+    // If hosted on Vercel or external domain, default to Render backend URL directly
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    const defaultBackend = isLocal ? "" : "https://caption-4pos.onrender.com";
+    window.API_BASE = localStorage.getItem("CAPTION_API_BASE") || defaultBackend;
   </script>
 </head>
 <body>
