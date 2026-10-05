@@ -20,7 +20,13 @@ const {
   deleteFromR2,
 } = require("./lib/r2");
 
-process.loadEnvFile();
+try {
+  if (fs.existsSync(".env")) {
+    process.loadEnvFile();
+  }
+} catch (e) {
+  // On Render/cloud environments, env variables are injected via process.env directly
+}
 if (!process.env.SARVAM_API_KEY) {
   console.error("SARVAM_API_KEY is not set in .env");
   process.exit(1);
