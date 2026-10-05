@@ -1,7 +1,6 @@
 {
   "scripts": {
-    "start": "node server.js",
-    "test-api": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
