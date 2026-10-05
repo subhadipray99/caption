@@ -449,47 +449,31 @@ async function transcribe(id, targetLang = "auto") {
   const ts = result.timestamps;
   const rawTexts = ts?.words || ts?.chunks;
   
-  // High-precision Acoustic Forced Alignment:
-  // Use Whisper acoustic frame timestamps to align Sarvam's transcript
-  let finalCaptions = null;
+  // Read waveform peaks for acoustic voice boundary alignment
+  let peaksData = null;
   try {
-    const sarvamWords = (result.transcript || '').split(/\s+/).filter(Boolean);
-    if (sarvamWords.length > 0) {
-      const whisperWords = await getWordTimestamps(audio);
-      if (whisperWords && whisperWords.length > 0) {
-        // Read audio duration from peaks if available
-        let audioDuration = null;
-        try {
-          const pk = JSON.parse(fs.readFileSync(path.join(dir, "peaks.json"), "utf8"));
-          if (pk && pk.peaks) audioDuration = +(pk.peaks.length / pk.rate).toFixed(2);
-        } catch {}
-        const aligned = alignTranscriptWithAcoustics(sarvamWords, whisperWords, audioDuration);
-        if (aligned && aligned.length > 0) {
-          finalCaptions = buildCaptionsFromWords(aligned, () => crypto.randomBytes(4).toString('hex'));
-        }
-      }
+    const pkFile = path.join(dir, "peaks.json");
+    if (fs.existsSync(pkFile)) {
+      peaksData = JSON.parse(fs.readFileSync(pkFile, "utf8"));
     }
-  } catch (alignErr) {
-    console.warn("Acoustic alignment fallback:", alignErr.message);
-  }
+  } catch {}
 
-  // Fallback to phrase-level interpolation if acoustic alignment is unavailable
-  if (!finalCaptions || finalCaptions.length === 0) {
-    if (!ts || !rawTexts?.length) {
-      if (result.transcript && result.transcript.trim()) {
-        const chunks = [{ text: result.transcript, start: 0, end: 15 }];
-        finalCaptions = buildCaptions(chunks);
-      } else {
-        throw new Error("No speech detected.");
-      }
+  let finalCaptions = null;
+  if (!ts || !rawTexts?.length) {
+    if (result.transcript && result.transcript.trim()) {
+      const dur = peaksData?.peaks?.length ? +(peaksData.peaks.length / peaksData.rate).toFixed(2) : 15;
+      const chunks = [{ text: result.transcript, start: 0, end: dur }];
+      finalCaptions = buildCaptions(chunks, peaksData);
     } else {
-      const chunks = rawTexts.map((text, i) => ({
-        text,
-        start: ts.start_time_seconds[i] != null ? ts.start_time_seconds[i] : 0,
-        end: ts.end_time_seconds[i] != null ? ts.end_time_seconds[i] : 0,
-      }));
-      finalCaptions = buildCaptions(chunks);
+      throw new Error("No speech detected.");
     }
+  } else {
+    const chunks = rawTexts.map((text, i) => ({
+      text,
+      start: ts.start_time_seconds[i] != null ? ts.start_time_seconds[i] : 0,
+      end: ts.end_time_seconds[i] != null ? ts.end_time_seconds[i] : 0,
+    }));
+    finalCaptions = buildCaptions(chunks, peaksData);
   }
 
   // If user requested Hinglish, convert Devanagari Hindi to natural Romanised Hinglish script
