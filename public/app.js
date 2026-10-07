@@ -587,7 +587,7 @@ function drawWave() {
   ctx.clearRect(0, 0, w, h);
   if (!state.peaks) return;
   const { rate, peaks } = state.peaks;
-  ctx.fillStyle = "#3b82f6";
+  ctx.fillStyle = "#2563eb";
   const x0 = tlScroll.scrollLeft;
   for (let x = 0; x < w; x++) {
     const t0 = (x0 + x) / state.pps, t1 = (x0 + x + 1) / state.pps;
