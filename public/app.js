@@ -129,9 +129,17 @@ function renderFiles() {
     if (p.status === "exporting") sub = `Exporting ${p.progress}%`;
     if (p.status === "error") sub = "Failed";
     li.innerHTML = `
-      <div class="file-thumb"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h11a1 1 0 011 1v3l4-3v12l-4-3v3a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg></div>
+      <div class="file-thumb">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+        </svg>
+      </div>
       <div class="file-meta"><div class="file-name"></div><div class="file-sub ${p.status === "error" ? "err" : ""}">${sub}</div></div>
-      <button class="file-del" title="Delete project">✕</button>`;
+      <button class="file-del" title="Delete video">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+        </svg>
+      </button>`;
     li.querySelector(".file-name").textContent = p.name;
     li.querySelector(".file-name").title = p.name;
     li.onclick = () => openProject(p.id);
@@ -289,11 +297,11 @@ function applyStatus(p) {
     $("#startTranscribeBtn").disabled = isWorking;
     $("#langSelect").disabled = isWorking;
     if (status === "uploaded") {
-      $("#startTranscribeBtn").innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg> Start Captioning`;
+      $("#startTranscribeBtn").innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> <span>Start Captioning</span>`;
     } else if (isWorking) {
-      $("#startTranscribeBtn").textContent = "Processing…";
+      $("#startTranscribeBtn").innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> <span>Processing…</span>`;
     } else {
-      $("#startTranscribeBtn").innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Re-transcribe`;
+      $("#startTranscribeBtn").innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> <span>Re-transcribe</span>`;
     }
   } else {
     ctrl.hidden = true;
@@ -579,7 +587,7 @@ function drawWave() {
   ctx.clearRect(0, 0, w, h);
   if (!state.peaks) return;
   const { rate, peaks } = state.peaks;
-  ctx.fillStyle = "#2b6f66";
+  ctx.fillStyle = "#3b82f6";
   const x0 = tlScroll.scrollLeft;
   for (let x = 0; x < w; x++) {
     const t0 = (x0 + x) / state.pps, t1 = (x0 + x + 1) / state.pps;
