@@ -58,9 +58,21 @@ function fmt(t, cs = true) {
 const API_BASE = window.API_BASE || "";
 async function api(path, opts = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const headers = { ...(opts.headers || {}) };
+  if (opts.body && !(opts.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  // Attach user auth token if session exists
+  try {
+    const session = await BuzyAuth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+  } catch {}
+
   const res = await fetch(url, {
     ...opts,
-    headers: opts.body && !(opts.body instanceof FormData) ? { "Content-Type": "application/json" } : undefined,
+    headers,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || res.statusText);

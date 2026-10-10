@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account — Buzy SI</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="landing.css" />
+  <link rel="stylesheet" href="account.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <div class="blueprint-grid"></div>
+
+  <!-- Top bar -->
+  <header class="account-nav">
+    <a href="/" class="brand">
+      <img src="logo.png" alt="Buzy SI Logo" class="brand-logo" />
+      <span class="brand-name">Buzy SI</span>
+      <span class="brand-badge">AUTH</span>
+    </a>
+    <a href="studio.html" class="btn btn-secondary btn-sm">Enter Studio →</a>
+  </header>
+
+  <main class="account-main">
+    <!-- Unauthenticated Auth Card -->
+    <div class="auth-card" id="authBox">
+      <div class="auth-header">
+        <h2 id="authHeading">Sign In to Buzy SI</h2>
+        <p id="authSub">Account mandatory to access video captioning studio.</p>
+      </div>
+
+      <!-- Mode switch tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchMode('login')">Sign In</button>
+        <button class="auth-tab" id="tabSignup" onclick="switchMode('signup')">Create Account</button>
+      </div>
+
+      <div class="auth-alert" id="authAlert" hidden></div>
+
+      <form id="authForm" onsubmit="handleAuth(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="emailInput" required placeholder="name@domain.com" />
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="passwordInput" required minlength="6" placeholder="At least 6 characters" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          Sign In to Buzy SI
+        </button>
+      </form>
+    </div>
+
+    <!-- Authenticated Profile Card -->
+    <div class="auth-card" id="profileBox" hidden>
+      <div class="auth-header">
+        <div class="avatar-ring">
+          <img src="logo.png" alt="Avatar" class="avatar-img" />
+        </div>
+        <h2>Buzy SI Account</h2>
+        <p id="userEmailText" class="user-email-badge">user@example.com</p>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-card">
+          <span class="stat-label">Plan</span>
+          <span class="stat-val">Free Tier Pro</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Storage</span>
+          <span class="stat-val">Cloudflare R2</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Database</span>
+          <span class="stat-val">Supabase PG</span>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <a href="studio.html" class="btn btn-primary btn-block">
+          Open Buzy SI Studio
+        </a>
+        <button type="button" class="btn btn-secondary btn-block" onclick="handleSignOut()">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let mode = new URLSearchParams(window.location.search).get("mode") || "login";
+
+    function switchMode(newMode) {
+      mode = newMode;
+      const isLogin = mode === "login";
+      document.getElementById("tabLogin").classList.toggle("active", isLogin);
+      document.getElementById("tabSignup").classList.toggle("active", !isLogin);
+      document.getElementById("authHeading").textContent = isLogin ? "Sign In to Buzy SI" : "Create Buzy SI Account";
+      document.getElementById("authSub").textContent = isLogin 
+        ? "Account mandatory to access video captioning studio."
+        : "Join Buzy SI for automated acoustic speech alignment.";
+      document.getElementById("submitBtn").textContent = isLogin ? "Sign In to Buzy SI" : "Create Free Account";
+      hideAlert();
+    }
+
+    function showAlert(msg, isError = true) {
+      const el = document.getElementById("authAlert");
+      el.textContent = msg;
+      el.className = "auth-alert " + (isError ? "error" : "success");
+      el.hidden = false;
+    }
+
+    function hideAlert() {
+      document.getElementById("authAlert").hidden = true;
+    }
+
+    async function handleAuth(e) {
+      e.preventDefault();
+      hideAlert();
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value;
+      const btn = document.getElementById("submitBtn");
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "Connecting…";
+
+        if (mode === "login") {
+          await BuzyAuth.signInWithEmail(email, password);
+          showAlert("Sign in successful! Redirecting to studio…", false);
+          setTimeout(() => { window.location.href = "studio.html"; }, 800);
+        } else {
+          const data = await BuzyAuth.signUpWithEmail(email, password);
+          if (data.session) {
+            showAlert("Account created! Redirecting to studio…", false);
+            setTimeout(() => { window.location.href = "studio.html"; }, 800);
+          } else {
+            showAlert("Account created! You can now sign in.", false);
+            switchMode("login");
+          }
+        }
+      } catch (err) {
+        showAlert(err.message || "Authentication failed. Please check your credentials.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = mode === "login" ? "Sign In to Buzy SI" : "Create Free Account";
+      }
+    }
+
+    async function handleSignOut() {
+      await BuzyAuth.signOut();
+    }
+
+    // Check existing auth state
+    (async () => {
+      switchMode(mode);
+      const user = await BuzyAuth.getUser();
+      if (user) {
+        document.getElementById("authBox").hidden = true;
+        document.getElementById("profileBox").hidden = false;
+        document.getElementById("userEmailText").textContent = user.email;
+      }
+    })();
+  </script>
+</body>
+</html>

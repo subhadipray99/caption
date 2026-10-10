@@ -3,279 +3,198 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Caption Studio</title>
+  <title>Buzy SI — Next-Gen Acoustic Speech Intelligence & Captions</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
-  <script>
-    // If hosted on Vercel or external domain, default to Render backend URL directly
-    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-    const defaultBackend = isLocal ? "" : "https://caption-4pos.onrender.com";
-    window.API_BASE = localStorage.getItem("CAPTION_API_BASE") || defaultBackend;
-  </script>
+  <link rel="stylesheet" href="landing.css" />
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
 </head>
 <body>
-  <!-- Header / Topbar -->
-  <header class="topbar">
-    <div class="brand">
-      <img src="logo.png" alt="Caption Studio Logo" class="brand-logo-img" />
-      <span class="brand-text">Caption Studio</span>
-      <span class="badge-tag">PRO</span>
+  <!-- Blueprint Graph Paper Grid Background -->
+  <div class="blueprint-grid"></div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <img src="logo.png" alt="Buzy SI Logo" class="brand-logo" />
+        <span class="brand-name">Buzy SI</span>
+        <span class="brand-badge">STUDIO</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Intelligence</a>
+        <a href="#tech" class="nav-link">Architecture</a>
+        <a href="#workflow" class="nav-link">Workflow</a>
+      </div>
+
+      <div class="nav-actions" id="navActions">
+        <a href="account.html?mode=login" class="btn btn-secondary">Sign In</a>
+        <a href="account.html?mode=signup" class="btn btn-primary">Create Account</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      <span>Acoustic Speech Intelligence · Sub-Second Alignment</span>
     </div>
 
-    <div class="project-title" id="projectTitle"></div>
+    <h1 class="hero-title">
+      Captions that speak the rhythm of <span class="highlight-blue">human voice.</span>
+    </h1>
 
-    <div class="top-actions">
-      <span class="export-status" id="exportStatus"></span>
-      <button class="btn btn-secondary btn-sm" id="srtBtn" disabled title="Download SubRip subtitles (.srt)">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+    <p class="hero-subtitle">
+      Powered by Sarvam AI neural speech recognition, acoustic speech island detection, and seamless Indic-to-Hinglish transliteration. High-precision video captioning built for creators and engineers.
+    </p>
+
+    <div class="hero-cta-group">
+      <a href="studio.html" id="heroCta" class="btn btn-hero">
+        <span>Launch Studio</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
-        <span>SRT</span>
-      </button>
-      <button class="btn btn-primary btn-sm" id="exportBtn" disabled>
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m22 8-6 4 6 4V8Z"/>
-          <rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
-        </svg>
-        <span>Export Video</span>
-      </button>
+      </a>
+      <a href="account.html?mode=signup" class="btn btn-hero-secondary">
+        <span>Get Started Free</span>
+      </a>
+    </div>
+
+    <!-- Interactive Blueprint Preview Card -->
+    <div class="hero-preview-wrapper">
+      <div class="hero-preview-card">
+        <div class="preview-header">
+          <div class="preview-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="preview-title">BUZY_SI_AUDIO_ALIGNMENT_ENGINE_V4.WAV</div>
+          <div class="preview-status">ACOUSTIC LOCK: 99.4%</div>
+        </div>
+
+        <div class="preview-screen">
+          <div class="waveform-visualizer">
+            <div class="wave-track-bar"></div>
+            <div class="speech-island-box left">
+              <span class="island-tag">VAD ISL #01</span>
+              <p>“I wanted to go to school...”</p>
+            </div>
+            <div class="silence-gap">
+              <span class="gap-indicator">PAUSE DETECTED [2.1s] → EMPTY SCREEN</span>
+            </div>
+            <div class="speech-island-box right">
+              <span class="island-tag">VAD ISL #02</span>
+              <p>“...but it was raining heavily.”</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <nav class="tabs">
-      <button class="tab active" data-tab="files">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
-        </svg>
-        <span>Media</span>
-      </button>
-      <button class="tab" data-tab="captions">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <span>Captions</span>
-      </button>
-      <button class="tab" data-tab="style">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
-        </svg>
-        <span>Style</span>
-      </button>
-    </nav>
+  <!-- Features Grid -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <span class="section-tag">ENGINEERING STANDARDS</span>
+      <h2>Engineered to eliminate caption lag forever.</h2>
+      <p>Conventional ASR stretches subtitles across dead pauses. Buzy SI synchronizes with raw waveform peaks.</p>
+    </div>
 
-    <!-- Media Tab -->
-    <section class="panel active" data-panel="files">
-      <label class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept="video/*" hidden />
-        <div class="drop-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-            <path d="M12 12v9"/>
-            <path d="m16 16-4-4-4 4"/>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
         </div>
-        <strong>Drop video file</strong>
-        <span>or click to browse from device</span>
-      </label>
-      <div class="upload-progress" id="uploadProgress" hidden><div></div></div>
-      
-      <div class="transcribe-controls" id="transcribeControls" hidden>
-        <div class="field">
-          <label>Spoken Language</label>
-          <div class="select-wrap">
-            <select id="langSelect">
-              <option value="auto">Auto-detect (Sarvam AI)</option>
-              <option value="hinglish">Hinglish (Hindi in Roman Latin)</option>
-              <option value="hi-IN">Hindi (हिंदी)</option>
-              <option value="en-IN">English</option>
-              <option value="bn-IN">Bengali (বাংলা)</option>
-              <option value="ta-IN">Tamil (தமிழ்)</option>
-              <option value="te-IN">Telugu (తెలుగు)</option>
-              <option value="mr-IN">Marathi (मराठी)</option>
-              <option value="gu-IN">Gujarati (ગુજરાતી)</option>
-              <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
-              <option value="ml-IN">Malayalam (മലയാളം)</option>
-              <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="startTranscribeBtn">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"/>
+        <h3>Acoustic Speech Islands</h3>
+        <p>VAD peak detection isolates vocal sentences. The moment a speaker pauses, subtitles clear cleanly instead of lingering on dead air.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"></path>
           </svg>
-          <span>Start Captioning</span>
-        </button>
-      </div>
-
-      <div class="sidebar-heading">Uploaded Media</div>
-      <ul class="file-list" id="fileList"></ul>
-    </section>
-
-    <!-- Captions Tab -->
-    <section class="panel" data-panel="captions">
-      <div class="empty" id="captionsEmpty">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <p>No captions yet</p>
-        <span>Upload a video and start transcription to generate word-timed subtitles.</span>
-      </div>
-      <ul class="caption-list" id="captionList"></ul>
-    </section>
-
-    <!-- Style Tab -->
-    <section class="panel" data-panel="style">
-      <div class="field">
-        <label>Font Family</label>
-        <div class="select-wrap">
-          <select id="sFont">
-            <option>Geist</option>
-            <option>Nirmala UI</option>
-            <option>Segoe UI</option>
-            <option>Arial</option>
-            <option>Verdana</option>
-            <option>Impact</option>
-            <option>Georgia</option>
-          </select>
         </div>
-      </div>
-      <div class="field">
-        <label>Font Size <output id="oSize"></output></label>
-        <input type="range" id="sSize" min="32" max="140" />
-      </div>
-      <div class="field">
-        <label>Vertical Position <output id="oPos"></output></label>
-        <input type="range" id="sPos" min="3" max="85" />
-      </div>
-      <div class="field row">
-        <label>Text Color</label>
-        <input type="color" id="sColor" />
-      </div>
-      <div class="field row">
-        <label><input type="checkbox" id="sHighlight" /> Active Word Highlight</label>
-        <input type="color" id="sHlColor" />
-      </div>
-      <div class="field row">
-        <label><input type="checkbox" id="sUpper" /> Uppercase (ALL CAPS)</label>
-      </div>
-      <div class="field row">
-        <label><input type="checkbox" id="sBg" /> Background Banner</label>
-        <input type="color" id="sBgColor" />
-      </div>
-      <div class="field" id="fOutline">
-        <label>Stroke Width <output id="oOutline"></output></label>
-        <input type="range" id="sOutline" min="0" max="14" />
-      </div>
-      <div class="field" id="fBgOp" hidden>
-        <label>Banner Opacity <output id="oBgOp"></output></label>
-        <input type="range" id="sBgOp" min="0" max="100" />
-      </div>
-      <button class="btn btn-secondary btn-sm" id="resetStyle" style="width: 100%; margin-top: 8px;">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-        </svg>
-        <span>Reset to Default Style</span>
-      </button>
-    </section>
-  </aside>
-
-  <!-- Video Stage / Canvas -->
-  <main class="stage" id="stage">
-    <div class="stage-empty" id="stageEmpty">
-      <div class="empty-icon">
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-          <circle cx="9" cy="9" r="2"/>
-          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-        </svg>
-      </div>
-      <h3>No video selected</h3>
-      <p>Drop a clip on the left sidebar to start editing and generate captions.</p>
-    </div>
-
-    <div class="player" id="player" hidden>
-      <video id="video" playsinline preload="auto"></video>
-      <div class="caption-layer" id="captionLayer"><div class="caption" id="captionBox"></div></div>
-      <div class="busy" id="busy" hidden>
-        <div class="spinner"></div>
-        <p id="busyText">Transcribing speech…</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- Timeline Dock -->
-  <section class="timeline">
-    <div class="tl-toolbar">
-      <button class="icon-btn" id="playBtn" title="Play / Pause (Space)">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-          <path id="playIcon" d="M8 5v14l11-7z"/>
-        </svg>
-      </button>
-
-      <span class="timecode">
-        <span id="curTime">00:00.00</span> / <span id="durTime">00:00.00</span>
-      </span>
-
-      <div class="tl-sep"></div>
-
-      <div class="btn-group">
-        <button class="btn btn-secondary btn-xs" id="addBtn" title="Add subtitle at playhead (A)">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-          <span>Add</span>
-        </button>
-        <button class="btn btn-secondary btn-xs" id="splitBtn" title="Split subtitle at playhead (S)">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-          <span>Split</span>
-        </button>
-        <button class="btn btn-secondary btn-xs" id="mergeBtn" title="Merge with next subtitle (M)">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 6 4-4 4 4"/><path d="M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22"/><path d="m20 22-5-5"/></svg>
-          <span>Merge</span>
-        </button>
-        <button class="btn btn-secondary btn-xs" id="deleteBtn" title="Delete selected (Del)">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-          <span>Delete</span>
-        </button>
-        <button class="btn btn-secondary btn-xs" id="undoBtn" title="Undo change (Ctrl+Z)">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-          <span>Undo</span>
-        </button>
-        <button class="btn btn-secondary btn-xs" id="retryBtn" hidden title="Re-transcribe speech">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          <span>Retry</span>
-        </button>
+        <h3>Native Indic & Hinglish AI</h3>
+        <p>Direct phoneme recognition for 10+ Indian languages with neural Romanized Latin transliteration via Sarvam AI & OpenRouter.</p>
       </div>
 
-      <div class="tl-spacer"></div>
-
-      <span class="hint">Double-click block to edit text · Drag edges to trim</span>
-
-      <div class="zoom">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-        </svg>
-        <input type="range" id="zoom" min="20" max="400" value="100" />
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect width="15" height="14" x="1" y="5" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+        <h3>Studio Video Timeline</h3>
+        <p>Precision multi-track timeline with interactive trim handles, split at playhead, and word-by-word karaoke highlighting.</p>
       </div>
-    </div>
 
-    <div class="tl-scroll" id="tlScroll">
-      <div class="tl-content" id="tlContent">
-        <div class="ruler" id="ruler"></div>
-        <div class="track caption-track" id="captionTrack"></div>
-        <canvas class="track wave-track" id="wave"></canvas>
-        <div class="playhead" id="playhead"></div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </div>
+        <h3>Zero-Bandwidth Cloud R2</h3>
+        <p>Videos stream directly to Cloudflare R2 presigned object storage and persist in Supabase cloud database across server cycles.</p>
       </div>
     </div>
   </section>
 
-  <script src="timing.js"></script>
-  <script src="app.js"></script>
+  <!-- CTA Banner -->
+  <section class="cta-banner">
+    <div class="cta-inner">
+      <h2>Ready to caption your footage?</h2>
+      <p>Log in or create a Buzy SI account to start editing on the studio timeline.</p>
+      <div class="cta-buttons">
+        <a href="studio.html" class="btn btn-hero">Open Buzy SI Studio</a>
+        <a href="account.html?mode=signup" class="btn btn-hero-secondary">Create Free Account</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <img src="logo.png" alt="Buzy SI Logo" class="brand-logo-small" />
+        <span class="footer-title">Buzy SI</span>
+        <span class="footer-copy">© 2026 Buzy SI. All rights reserved.</span>
+      </div>
+      <div class="footer-links">
+        <a href="studio.html">Studio</a>
+        <a href="account.html?mode=login">Account</a>
+        <a href="https://github.com/subhadipray99/caption" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Update nav if already authenticated
+    (async () => {
+      const session = await BuzyAuth.getSession();
+      const navActions = document.getElementById("navActions");
+      const heroCta = document.getElementById("heroCta");
+      if (session && session.user) {
+        navActions.innerHTML = `
+          <a href="studio.html" class="btn btn-secondary">Open Studio</a>
+          <a href="account.html" class="btn btn-primary">My Account (${session.user.email.split('@')[0]})</a>
+        `;
+        if (heroCta) heroCta.href = "studio.html";
+      }
+    })();
+  </script>
 </body>
 </html>
