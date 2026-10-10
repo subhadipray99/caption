@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="100%" height="100%">
+  <!-- Waterdrop / speech-bubble body (#5555ff) -->
+  <path d="M 480 284 C 330 284 195 410 195 588 C 195 765 330 892 499 892 C 670 892 805 765 805 588 L 805 284 Z" fill="#5555ff"/>
+  <!-- Left Eye Outer -->
+  <circle cx="434" cy="502" r="66" fill="#ffffff"/>
+  <!-- Left Eye Pupil -->
+  <circle cx="434" cy="528" r="37" fill="#000000"/>
+  <!-- Right Eye Outer -->
+  <circle cx="630" cy="502" r="66" fill="#ffffff"/>
+  <!-- Right Eye Pupil -->
+  <circle cx="630" cy="528" r="37" fill="#000000"/>
+</svg>

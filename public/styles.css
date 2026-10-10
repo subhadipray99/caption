@@ -81,6 +81,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.brand-logo-img {
+  width: 30px; height: 30px; object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(85, 85, 255, 0.25));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand:hover .brand-logo-img { transform: scale(1.08) rotate(-4deg); }
 .logo {
   display: grid; place-items: center;
   width: 28px; height: 28px; border-radius: var(--radius);
