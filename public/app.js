@@ -19,9 +19,9 @@ const DEFAULT_STYLE = {
 };
 const BUSY = ["extracting", "transcribing", "converting_hinglish", "exporting"];
 const BUSY_TEXT = {
-  extracting: "Extracting speech audio…",
-  transcribing: "Transcribing with Sarvam (saaras:v4)…<br><small>Generating accurate acoustic timestamps.</small>",
-  converting_hinglish: "Converting to Hinglish via OpenRouter (Qwen)…<br><small>Replacing Devanagari script with natural Romanised Hinglish.</small>",
+  extracting: "Extracting audio track…",
+  transcribing: "Transcribing speech…<br><small>Generating accurate word timestamps.</small>",
+  converting_hinglish: "Transliterating to Hinglish…<br><small>Converting script to Romanized text.</small>",
 };
 
 const state = {
@@ -216,7 +216,7 @@ async function uploadFile(file) {
       barFill.style.width = "0";
       await loadProjects();
       await openProject(p.id);
-      toast("Video placed in R2 storage! Choose language and click Start.");
+      toast("Video uploaded! Choose language and click Start.");
       return;
     }
   } catch (r2Err) {
