@@ -23,7 +23,7 @@
       <span class="brand-name">Buzy SI</span>
       <span class="brand-badge">AUTH</span>
     </a>
-    <a href="studio.html" class="btn btn-secondary btn-sm">Enter Studio →</a>
+    <a href="/" class="btn btn-secondary btn-sm">Enter Studio →</a>
   </header>
 
   <main class="account-main">
@@ -85,7 +85,7 @@
       </div>
 
       <div class="profile-actions">
-        <a href="studio.html" class="btn btn-primary btn-block">
+        <a href="/" class="btn btn-primary btn-block">
           Open Buzy SI Studio
         </a>
         <button type="button" class="btn btn-secondary btn-block" onclick="handleSignOut()">
@@ -136,12 +136,12 @@
         if (mode === "login") {
           await BuzyAuth.signInWithEmail(email, password);
           showAlert("Sign in successful! Redirecting to studio…", false);
-          setTimeout(() => { window.location.href = "studio.html"; }, 800);
+          setTimeout(() => { window.location.href = "/"; }, 800);
         } else {
           const data = await BuzyAuth.signUpWithEmail(email, password);
           if (data.session) {
             showAlert("Account created! Redirecting to studio…", false);
-            setTimeout(() => { window.location.href = "studio.html"; }, 800);
+            setTimeout(() => { window.location.href = "/"; }, 800);
           } else {
             showAlert("Account created! You can now sign in.", false);
             switchMode("login");

@@ -3,200 +3,297 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Buzy SI — Next-Gen Acoustic Speech Intelligence & Captions</title>
+  <title>Buzy SI — Studio</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="landing.css" />
-  <!-- Supabase CDN -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Supabase & Auth Guard -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
+  <script>
+    // Mandatory Auth Guard: Redirect to account login if not authenticated
+    (async () => {
+      const user = await BuzyAuth.requireAuth("/account.html?mode=login");
+      if (user && document.getElementById("userPill")) {
+        document.getElementById("userPill").textContent = user.email.split("@")[0];
+      }
+    })();
+
+    // If hosted on Vercel or external domain, default to Render backend URL directly
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    const defaultBackend = isLocal ? "" : "https://caption-4pos.onrender.com";
+    window.API_BASE = localStorage.getItem("CAPTION_API_BASE") || defaultBackend;
+  </script>
 </head>
 <body>
-  <!-- Blueprint Graph Paper Grid Background -->
-  <div class="blueprint-grid"></div>
+  <!-- Header / Topbar -->
+  <header class="topbar">
+    <a href="/" class="brand" style="text-decoration: none; color: inherit;">
+      <img src="logo.png" alt="Buzy SI Logo" class="brand-logo-img" />
+      <span class="brand-text">Buzy SI</span>
+      <span class="badge-tag">STUDIO</span>
+    </a>
 
-  <!-- Navigation -->
-  <nav class="nav">
-    <div class="nav-container">
-      <a href="/" class="brand">
-        <img src="logo.png" alt="Buzy SI Logo" class="brand-logo" />
-        <span class="brand-name">Buzy SI</span>
-        <span class="brand-badge">STUDIO</span>
-      </a>
+    <div class="project-title" id="projectTitle"></div>
 
-      <div class="nav-links">
-        <a href="#features" class="nav-link">Intelligence</a>
-        <a href="#tech" class="nav-link">Architecture</a>
-        <a href="#workflow" class="nav-link">Workflow</a>
-      </div>
-
-      <div class="nav-actions" id="navActions">
-        <a href="account.html?mode=login" class="btn btn-secondary">Sign In</a>
-        <a href="account.html?mode=signup" class="btn btn-primary">Create Account</a>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <header class="hero">
-    <div class="hero-badge">
-      <span class="badge-dot"></span>
-      <span>Neural Speech Transcription · Dynamic Word Highlighting</span>
-    </div>
-
-    <h1 class="hero-title">
-      Captions that speak the rhythm of <span class="highlight-blue">human voice.</span>
-    </h1>
-
-    <p class="hero-subtitle">
-      Powered by neural speech recognition, millisecond word-level timing, and natural Hinglish transliteration. High-precision video captioning built for creators and editors.
-    </p>
-
-    <div class="hero-cta-group">
-      <a href="studio.html" id="heroCta" class="btn btn-hero">
-        <span>Launch Studio</span>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
+    <div class="top-actions">
+      <span class="export-status" id="exportStatus"></span>
+      <button class="btn btn-secondary btn-sm" id="srtBtn" disabled title="Download SubRip subtitles (.srt)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
+        <span>SRT</span>
+      </button>
+      <button class="btn btn-primary btn-sm" id="exportBtn" disabled>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m22 8-6 4 6 4V8Z"/>
+          <rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+        </svg>
+        <span>Export Video</span>
+      </button>
+      <a href="account.html" class="btn btn-secondary btn-sm" title="Account settings" style="text-decoration: none;">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span id="userPill">Account</span>
       </a>
-      <a href="account.html?mode=signup" class="btn btn-hero-secondary">
-        <span>Get Started Free</span>
-      </a>
-    </div>
-
-    <!-- Interactive Studio Preview Card -->
-    <div class="hero-preview-wrapper">
-      <div class="hero-preview-card">
-        <div class="preview-header">
-          <div class="preview-dots">
-            <span></span><span></span><span></span>
-          </div>
-          <div class="preview-title">BUZY_SI_STUDIO_TIMELINE_PREVIEW.MP4</div>
-          <div class="preview-status">TRANSCRIPTION: READY</div>
-        </div>
-
-        <div class="preview-screen">
-          <div class="video-preview-canvas">
-            <div class="preview-video-box">
-              <div class="preview-karaoke-caption">
-                <span class="w done">Create</span>
-                <span class="w active">viral</span>
-                <span class="w next">captions</span>
-                <span class="w next">effortlessly</span>
-              </div>
-            </div>
-            <div class="preview-timeline-dock">
-              <div class="preview-track-label">CC</div>
-              <div class="preview-block b1">Create viral</div>
-              <div class="preview-block b2 active">captions effortlessly</div>
-              <div class="preview-playhead"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </header>
 
-  <!-- Features Grid -->
-  <section class="section" id="features">
-    <div class="section-header">
-      <span class="section-tag">ENGINEERING STANDARDS</span>
-      <h2>Professional video captioning workflow.</h2>
-      <p>Automate word-level timestamps, edit text on the timeline, and style dynamic animated subtitles.</p>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <nav class="tabs">
+      <button class="tab active" data-tab="files">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+        </svg>
+        <span>Media</span>
+      </button>
+      <button class="tab" data-tab="captions">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>Captions</span>
+      </button>
+      <button class="tab" data-tab="style">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>
+        </svg>
+        <span>Style</span>
+      </button>
+    </nav>
+
+    <!-- Media Tab -->
+    <section class="panel active" data-panel="files">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="video/*" hidden />
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+            <path d="M12 12v9"/>
+            <path d="m16 16-4-4-4 4"/>
+          </svg>
+        </div>
+        <strong>Drop video file</strong>
+        <span>or click to browse from device</span>
+      </label>
+      <div class="upload-progress" id="uploadProgress" hidden><div></div></div>
+      
+      <div class="transcribe-controls" id="transcribeControls" hidden>
+        <div class="field">
+          <label>Spoken Language</label>
+          <div class="select-wrap">
+            <select id="langSelect">
+              <option value="auto">Auto-detect Language</option>
+              <option value="hinglish">Hinglish (Hindi in Roman Latin)</option>
+              <option value="hi-IN">Hindi (हिंदी)</option>
+              <option value="en-IN">English</option>
+              <option value="bn-IN">Bengali (বাংলা)</option>
+              <option value="ta-IN">Tamil (தமிழ்)</option>
+              <option value="te-IN">Telugu (తెలుగు)</option>
+              <option value="mr-IN">Marathi (मराठी)</option>
+              <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+              <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+              <option value="ml-IN">Malayalam (മലയാളം)</option>
+              <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="startTranscribeBtn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>Start Captioning</span>
+        </button>
+      </div>
+
+      <div class="sidebar-heading">Uploaded Media</div>
+      <ul class="file-list" id="fileList"></ul>
+    </section>
+
+    <!-- Captions Tab -->
+    <section class="panel" data-panel="captions">
+      <div class="empty" id="captionsEmpty">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <p>No captions yet</p>
+        <span>Upload a video and start transcription to generate word-timed subtitles.</span>
+      </div>
+      <ul class="caption-list" id="captionList"></ul>
+    </section>
+
+    <!-- Style Tab -->
+    <section class="panel" data-panel="style">
+      <div class="field">
+        <label>Font Family</label>
+        <div class="select-wrap">
+          <select id="sFont">
+            <option>Geist</option>
+            <option>Nirmala UI</option>
+            <option>Segoe UI</option>
+            <option>Arial</option>
+            <option>Verdana</option>
+            <option>Impact</option>
+            <option>Georgia</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Font Size <output id="oSize"></output></label>
+        <input type="range" id="sSize" min="32" max="140" />
+      </div>
+      <div class="field">
+        <label>Vertical Position <output id="oPos"></output></label>
+        <input type="range" id="sPos" min="3" max="85" />
+      </div>
+      <div class="field row">
+        <label>Text Color</label>
+        <input type="color" id="sColor" />
+      </div>
+      <div class="field row">
+        <label><input type="checkbox" id="sHighlight" /> Active Word Highlight</label>
+        <input type="color" id="sHlColor" />
+      </div>
+      <div class="field row">
+        <label><input type="checkbox" id="sUpper" /> Uppercase (ALL CAPS)</label>
+      </div>
+      <div class="field row">
+        <label><input type="checkbox" id="sBg" /> Background Banner</label>
+        <input type="color" id="sBgColor" />
+      </div>
+      <div class="field" id="fOutline">
+        <label>Stroke Width <output id="oOutline"></output></label>
+        <input type="range" id="sOutline" min="0" max="14" />
+      </div>
+      <div class="field" id="fBgOp" hidden>
+        <label>Banner Opacity <output id="oBgOp"></output></label>
+        <input type="range" id="sBgOp" min="0" max="100" />
+      </div>
+      <button class="btn btn-secondary btn-sm" id="resetStyle" style="width: 100%; margin-top: 8px;">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        <span>Reset to Default Style</span>
+      </button>
+    </section>
+  </aside>
+
+  <!-- Video Stage / Canvas -->
+  <main class="stage" id="stage">
+    <div class="stage-empty" id="stageEmpty">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+        </svg>
+      </div>
+      <h3>No video selected</h3>
+      <p>Drop a clip on the left sidebar to start editing and generate captions.</p>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-          </svg>
-        </div>
-        <h3>Word-by-Word Timestamps</h3>
-        <p>Neural speech models calculate exact millisecond timestamps for every spoken word, enabling lively karaoke highlights.</p>
+    <div class="player" id="player" hidden>
+      <video id="video" playsinline preload="auto"></video>
+      <div class="caption-layer" id="captionLayer"><div class="caption" id="captionBox"></div></div>
+      <div class="busy" id="busy" hidden>
+        <div class="spinner"></div>
+        <p id="busyText">Transcribing speech…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Timeline Dock -->
+  <section class="timeline">
+    <div class="tl-toolbar">
+      <button class="icon-btn" id="playBtn" title="Play / Pause (Space)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+          <path id="playIcon" d="M8 5v14l11-7z"/>
+        </svg>
+      </button>
+
+      <span class="timecode">
+        <span id="curTime">00:00.00</span> / <span id="durTime">00:00.00</span>
+      </span>
+
+      <div class="tl-sep"></div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-xs" id="addBtn" title="Add subtitle at playhead (A)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span>Add</span>
+        </button>
+        <button class="btn btn-secondary btn-xs" id="splitBtn" title="Split subtitle at playhead (S)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+          <span>Split</span>
+        </button>
+        <button class="btn btn-secondary btn-xs" id="mergeBtn" title="Merge with next subtitle (M)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 6 4-4 4 4"/><path d="M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22"/><path d="m20 22-5-5"/></svg>
+          <span>Merge</span>
+        </button>
+        <button class="btn btn-secondary btn-xs" id="deleteBtn" title="Delete selected (Del)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <span>Delete</span>
+        </button>
+        <button class="btn btn-secondary btn-xs" id="undoBtn" title="Undo change (Ctrl+Z)">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          <span>Undo</span>
+        </button>
+        <button class="btn btn-secondary btn-xs" id="retryBtn" hidden title="Re-transcribe speech">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Retry</span>
+        </button>
       </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"></path>
-          </svg>
-        </div>
-        <h3>Native Indic & Hinglish AI</h3>
-        <p>Direct phoneme recognition for 10+ regional languages with natural Romanized Latin transliteration built-in.</p>
-      </div>
+      <div class="tl-spacer"></div>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7"></polygon>
-            <rect width="15" height="14" x="1" y="5" rx="2" ry="2"></rect>
-          </svg>
-        </div>
-        <h3>Studio Video Timeline</h3>
-        <p>CapCut-style multi-track timeline with interactive trim handles, split at playhead, and word-by-word karaoke highlighting.</p>
-      </div>
+      <span class="hint">Double-click block to edit text · Drag edges to trim</span>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-        </div>
-        <h3>Cloud Sync & Backup</h3>
-        <p>Direct secure cloud storage ensures your projects, custom styling, and subtitle edits are preserved seamlessly across devices.</p>
+      <div class="zoom">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+        <input type="range" id="zoom" min="20" max="400" value="100" />
+      </div>
+    </div>
+
+    <div class="tl-scroll" id="tlScroll">
+      <div class="tl-content" id="tlContent">
+        <div class="ruler" id="ruler"></div>
+        <div class="track caption-track" id="captionTrack"></div>
+        <canvas class="track wave-track" id="wave"></canvas>
+        <div class="playhead" id="playhead"></div>
       </div>
     </div>
   </section>
 
-  <!-- CTA Banner -->
-  <section class="cta-banner">
-    <div class="cta-inner">
-      <h2>Ready to caption your footage?</h2>
-      <p>Log in or create a Buzy SI account to start editing on the studio timeline.</p>
-      <div class="cta-buttons">
-        <a href="studio.html" class="btn btn-hero">Open Buzy SI Studio</a>
-        <a href="account.html?mode=signup" class="btn btn-hero-secondary">Create Free Account</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <img src="logo.png" alt="Buzy SI Logo" class="brand-logo-small" />
-        <span class="footer-title">Buzy SI</span>
-        <span class="footer-copy">© 2026 Buzy SI. All rights reserved.</span>
-      </div>
-      <div class="footer-links">
-        <a href="studio.html">Studio</a>
-        <a href="account.html?mode=login">Account</a>
-        <a href="https://github.com/subhadipray99/caption" target="_blank">GitHub</a>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    // Update nav if already authenticated
-    (async () => {
-      const session = await BuzyAuth.getSession();
-      const navActions = document.getElementById("navActions");
-      const heroCta = document.getElementById("heroCta");
-      if (session && session.user) {
-        navActions.innerHTML = `
-          <a href="studio.html" class="btn btn-secondary">Open Studio</a>
-          <a href="account.html" class="btn btn-primary">My Account (${session.user.email.split('@')[0]})</a>
-        `;
-        if (heroCta) heroCta.href = "studio.html";
-      }
-    })();
-  </script>
+  <script src="timing.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
