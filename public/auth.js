@@ -4,9 +4,9 @@
 const SUPABASE_URL = "https://jsrxiehmnqatqoyqopun.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzcnhpZWhtbnFhdHFveXFvcHVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNzUwMjAsImV4cCI6MjEwNjc1MTAyMH0.7EjFx7i_ajnKNO42npTwiWubpwH1viu3GnA3yhGA_qg";
 
-// Shared cookie storage helper across root domain (.buzysi.com)
-const isCustomDomain = location.hostname.endsWith("buzysi.com");
-const cookieDomain = isCustomDomain ? ".buzysi.com" : undefined;
+// Shared cookie storage helper across root domain (.buzy.si)
+const isCustomDomain = location.hostname.endsWith("buzy.si");
+const cookieDomain = isCustomDomain ? ".buzy.si" : undefined;
 
 // Initialize Supabase browser client
 let sb = null;
