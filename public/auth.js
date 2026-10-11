@@ -4,6 +4,10 @@
 const SUPABASE_URL = "https://jsrxiehmnqatqoyqopun.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzcnhpZWhtbnFhdHFveXFvcHVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNzUwMjAsImV4cCI6MjEwNjc1MTAyMH0.7EjFx7i_ajnKNO42npTwiWubpwH1viu3GnA3yhGA_qg";
 
+// Shared cookie storage helper across root domain (.buzysi.com)
+const isCustomDomain = location.hostname.endsWith("buzysi.com");
+const cookieDomain = isCustomDomain ? ".buzysi.com" : undefined;
+
 // Initialize Supabase browser client
 let sb = null;
 if (window.supabase) {
@@ -12,6 +16,22 @@ if (window.supabase) {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      storage: {
+        getItem: (key) => {
+          const match = document.cookie.match(new RegExp("(^| )" + key + "=([^;]+)"));
+          return match ? decodeURIComponent(match[2]) : localStorage.getItem(key);
+        },
+        setItem: (key, value) => {
+          localStorage.setItem(key, value);
+          const domainStr = cookieDomain ? `; domain=${cookieDomain}` : "";
+          document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=2592000; SameSite=Lax${domainStr}`;
+        },
+        removeItem: (key) => {
+          localStorage.removeItem(key);
+          const domainStr = cookieDomain ? `; domain=${cookieDomain}` : "";
+          document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax${domainStr}`;
+        },
+      },
     },
   });
 }
