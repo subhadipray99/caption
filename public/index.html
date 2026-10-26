@@ -13,11 +13,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script>
-    // Mandatory Auth Guard: Redirect to account login if not authenticated
+    // Check Auth State: Update user pill or show sign-in option
     (async () => {
-      const user = await BuzyAuth.requireAuth("/account.html?mode=login");
-      if (user && document.getElementById("userPill")) {
-        document.getElementById("userPill").textContent = user.email.split("@")[0];
+      try {
+        const user = await BuzyAuth.getUser();
+        const pill = document.getElementById("userPill");
+        const accountLink = document.getElementById("accountLink");
+        if (user && pill) {
+          pill.textContent = user.email.split("@")[0];
+        } else if (pill && accountLink) {
+          pill.textContent = "Sign In";
+          accountLink.href = "/account?mode=login";
+        }
+      } catch (e) {
+        console.warn("Auth check warning:", e);
       }
     })();
 
@@ -55,7 +64,7 @@
         </svg>
         <span>Export Video</span>
       </button>
-      <a href="account.html" class="btn btn-secondary btn-sm" title="Account settings" style="text-decoration: none;">
+      <a href="/account" id="accountLink" class="btn btn-secondary btn-sm" title="Account settings" style="text-decoration: none;">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
