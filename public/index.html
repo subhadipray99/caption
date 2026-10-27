@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=JetBrains+Mono:wght@500;700&family=Montserrat:wght@600;700;800;900&family=Oswald:wght@600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&family=Rubik:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <!-- Supabase & Auth Guard -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -176,52 +176,160 @@
 
     <!-- Style Tab -->
     <section class="panel" data-panel="style">
+      <!-- Style Presets -->
+      <div class="preset-box">
+        <label class="panel-subhead">VIRAL STYLE PRESETS</label>
+        <div class="presets-row">
+          <button type="button" class="preset-chip active" data-preset="hormozi" title="Punchy viral TikTok/Reels style">
+            <span class="preset-tag" style="background:#000; color:#ffd60a; border:1px solid #ffd60a;">HORMOZI</span>
+            <span class="preset-name">Viral Reel</span>
+          </button>
+          <button type="button" class="preset-chip" data-preset="minimal" title="Clean modern influencer style">
+            <span class="preset-tag" style="background:#e2e8f0; color:#0f172a;">CLEAN</span>
+            <span class="preset-name">Minimal</span>
+          </button>
+          <button type="button" class="preset-chip" data-preset="cyber" title="Futuristic neon coder vibe">
+            <span class="preset-tag" style="background:#09090b; color:#00ffcc;">CYBER</span>
+            <span class="preset-name">Neon Pop</span>
+          </button>
+          <button type="button" class="preset-chip" data-preset="cinematic" title="Luxury cinematic storytelling">
+            <span class="preset-tag" style="background:#1e1b4b; color:#fbbf24; font-style:italic;">CINEMA</span>
+            <span class="preset-name">Story</span>
+          </button>
+          <button type="button" class="preset-chip" data-preset="boxed" title="Solid background pill for high contrast">
+            <span class="preset-tag" style="background:#18181b; color:#ffffff;">BOXED</span>
+            <span class="preset-name">Pill Bar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Typography -->
+      <label class="panel-subhead" style="margin-top:14px;">TYPOGRAPHY & FONT</label>
       <div class="field">
         <label>Font Family</label>
         <div class="select-wrap">
           <select id="sFont">
-            <option>Geist</option>
-            <option>Nirmala UI</option>
-            <option>Segoe UI</option>
-            <option>Arial</option>
-            <option>Verdana</option>
-            <option>Impact</option>
-            <option>Georgia</option>
+            <optgroup label="Viral Social / Shorts">
+              <option value="Montserrat" selected>Montserrat (Modern Clean)</option>
+              <option value="Anton">Anton (Bold Viral Punch)</option>
+              <option value="Bebas Neue">Bebas Neue (Tall Condensed)</option>
+              <option value="Poppins">Poppins (Friendly Geometric)</option>
+              <option value="Rubik">Rubik (Heavy Punchy)</option>
+              <option value="Oswald">Oswald (Classic YouTube)</option>
+            </optgroup>
+            <optgroup label="Modern Sans & UI">
+              <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+              <option value="Geist">Geist</option>
+              <option value="Arial">Arial</option>
+              <option value="Segoe UI">Segoe UI</option>
+              <option value="Verdana">Verdana</option>
+            </optgroup>
+            <optgroup label="Indic & Regional">
+              <option value="Nirmala UI">Nirmala UI (Hindi / Hinglish)</option>
+            </optgroup>
+            <optgroup label="Display, Mono & Serif">
+              <option value="Impact">Impact (Classic Meme)</option>
+              <option value="JetBrains Mono">JetBrains Mono (Tech/Code)</option>
+              <option value="Playfair Display">Playfair Display (Cinematic)</option>
+              <option value="Georgia">Georgia (Editorial)</option>
+            </optgroup>
           </select>
         </div>
       </div>
-      <div class="field">
-        <label>Font Size <output id="oSize"></output></label>
-        <input type="range" id="sSize" min="32" max="140" />
+
+      <div class="field-grid-2">
+        <div class="field">
+          <label>Font Size <output id="oSize"></output></label>
+          <input type="range" id="sSize" min="32" max="150" />
+        </div>
+        <div class="field">
+          <label>Vertical Position <output id="oPos"></output></label>
+          <input type="range" id="sPos" min="3" max="85" />
+        </div>
       </div>
+
+      <!-- Spacing Controls -->
+      <label class="panel-subhead" style="margin-top:14px;">SPACING & ALIGNMENT</label>
       <div class="field">
-        <label>Vertical Position <output id="oPos"></output></label>
-        <input type="range" id="sPos" min="3" max="85" />
+        <label>Letter Spacing (Tracking) <output id="oLetterSpacing"></output></label>
+        <input type="range" id="sLetterSpacing" min="-2" max="16" step="1" />
       </div>
+
+      <div class="field-grid-2">
+        <div class="field">
+          <label>Line Spacing <output id="oLineSpacing"></output></label>
+          <input type="range" id="sLineSpacing" min="1.0" max="2.2" step="0.05" />
+        </div>
+        <div class="field">
+          <label>Word Spacing <output id="oWordSpacing"></output></label>
+          <input type="range" id="sWordSpacing" min="0" max="24" step="1" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Text Alignment</label>
+        <div class="segmented-control" id="alignControl">
+          <button type="button" class="seg-btn" data-align="left" title="Align Left">Left</button>
+          <button type="button" class="seg-btn active" data-align="center" title="Align Center">Center</button>
+          <button type="button" class="seg-btn" data-align="right" title="Align Right">Right</button>
+        </div>
+      </div>
+
+      <!-- Colors & Highlights -->
+      <label class="panel-subhead" style="margin-top:14px;">COLORS & EFFECTS</label>
       <div class="field row">
         <label>Text Color</label>
         <input type="color" id="sColor" />
       </div>
+
       <div class="field row">
         <label><input type="checkbox" id="sHighlight" /> Active Word Highlight</label>
         <input type="color" id="sHlColor" />
       </div>
+
+      <div class="field-grid-2">
+        <div class="field row">
+          <label><input type="checkbox" id="sBold" checked /> Bold</label>
+        </div>
+        <div class="field row">
+          <label><input type="checkbox" id="sItalic" /> Italic</label>
+        </div>
+      </div>
+
       <div class="field row">
         <label><input type="checkbox" id="sUpper" /> Uppercase (ALL CAPS)</label>
       </div>
+
+      <!-- Stroke / Outline -->
+      <div class="field" id="fOutline">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="margin:0;">Stroke Width <output id="oOutline"></output></label>
+          <input type="color" id="sOutlineColor" title="Stroke Outline Color" style="width:24px; height:24px; padding:0; border:none; cursor:pointer;" />
+        </div>
+        <input type="range" id="sOutline" min="0" max="16" />
+      </div>
+
+      <!-- Shadow & Glow -->
+      <div class="field" id="fShadow">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="margin:0;">Drop Shadow / Glow <output id="oShadow"></output></label>
+          <input type="color" id="sShadowColor" title="Shadow Color" style="width:24px; height:24px; padding:0; border:none; cursor:pointer;" />
+        </div>
+        <input type="range" id="sShadow" min="0" max="16" />
+      </div>
+
+      <!-- Background Banner -->
       <div class="field row">
-        <label><input type="checkbox" id="sBg" /> Background Banner</label>
+        <label><input type="checkbox" id="sBg" /> Background Banner Pill</label>
         <input type="color" id="sBgColor" />
       </div>
-      <div class="field" id="fOutline">
-        <label>Stroke Width <output id="oOutline"></output></label>
-        <input type="range" id="sOutline" min="0" max="14" />
-      </div>
+
       <div class="field" id="fBgOp" hidden>
         <label>Banner Opacity <output id="oBgOp"></output></label>
         <input type="range" id="sBgOp" min="0" max="100" />
       </div>
-      <button class="btn btn-secondary btn-sm" id="resetStyle" style="width: 100%; margin-top: 8px;">
+
+      <button class="btn btn-secondary btn-sm" id="resetStyle" style="width: 100%; margin-top: 14px;">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
           <path d="M3 3v5h5"/>
@@ -332,5 +440,34 @@
 
   <script src="timing.js"></script>
   <script src="app.js"></script>
+  <!-- Mobile Bottom Navigation (Visible on mobile viewports <= 820px) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button class="m-nav-btn active" data-view="player" title="Video Player & Canvas">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+      </svg>
+      <span>Player</span>
+    </button>
+    <button class="m-nav-btn" data-view="captions" title="Edit Captions">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>Captions</span>
+    </button>
+    <button class="m-nav-btn" data-view="style" title="Typography & Styles">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/>
+      </svg>
+      <span>Style</span>
+    </button>
+    <button class="m-nav-btn" data-view="files" title="Upload Media">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+      </svg>
+      <span>Media</span>
+    </button>
+  </nav>
+
 </body>
 </html>

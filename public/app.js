@@ -4,7 +4,7 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 
 // Mirrors lib/ass.js DEFAULTS so preview == export.
 const DEFAULT_STYLE = {
-  font: "Nirmala UI",
+  font: "Montserrat",
   size: 72,
   color: "#FFFFFF",
   highlight: true,
@@ -16,6 +16,114 @@ const DEFAULT_STYLE = {
   bgOpacity: 0.6,
   position: 15,
   uppercase: false,
+  letterSpacing: 1,
+  lineSpacing: 1.25,
+  wordSpacing: 0,
+  shadow: 0,
+  shadowColor: "#000000",
+  bold: true,
+  italic: false,
+  alignment: "center",
+};
+
+const PRESETS = {
+  hormozi: {
+    font: "Anton",
+    size: 78,
+    color: "#FFFFFF",
+    highlight: true,
+    highlightColor: "#FFD60A",
+    outline: 6,
+    outlineColor: "#000000",
+    background: false,
+    uppercase: true,
+    letterSpacing: 1,
+    lineSpacing: 1.2,
+    wordSpacing: 2,
+    shadow: 0,
+    shadowColor: "#000000",
+    bold: true,
+    italic: false,
+    alignment: "center",
+  },
+  minimal: {
+    font: "Montserrat",
+    size: 68,
+    color: "#FFFFFF",
+    highlight: true,
+    highlightColor: "#38BDF8",
+    outline: 0,
+    outlineColor: "#000000",
+    background: false,
+    uppercase: false,
+    letterSpacing: 2,
+    lineSpacing: 1.3,
+    wordSpacing: 1,
+    shadow: 4,
+    shadowColor: "#000000",
+    bold: true,
+    italic: false,
+    alignment: "center",
+  },
+  cyber: {
+    font: "JetBrains Mono",
+    size: 70,
+    color: "#FFFFFF",
+    highlight: true,
+    highlightColor: "#00FFCC",
+    outline: 4,
+    outlineColor: "#050505",
+    background: false,
+    uppercase: true,
+    letterSpacing: 2,
+    lineSpacing: 1.25,
+    wordSpacing: 0,
+    shadow: 6,
+    shadowColor: "#00FFCC",
+    bold: true,
+    italic: false,
+    alignment: "center",
+  },
+  cinematic: {
+    font: "Playfair Display",
+    size: 66,
+    color: "#FFF8E7",
+    highlight: true,
+    highlightColor: "#FBBF24",
+    outline: 1,
+    outlineColor: "#000000",
+    background: false,
+    uppercase: false,
+    letterSpacing: 2,
+    lineSpacing: 1.35,
+    wordSpacing: 2,
+    shadow: 3,
+    shadowColor: "#000000",
+    bold: true,
+    italic: true,
+    alignment: "center",
+  },
+  boxed: {
+    font: "Poppins",
+    size: 64,
+    color: "#FFFFFF",
+    highlight: true,
+    highlightColor: "#FFD60A",
+    outline: 0,
+    outlineColor: "#000000",
+    background: true,
+    bgColor: "#09090b",
+    bgOpacity: 0.75,
+    uppercase: false,
+    letterSpacing: 1,
+    lineSpacing: 1.25,
+    wordSpacing: 0,
+    shadow: 0,
+    shadowColor: "#000000",
+    bold: true,
+    italic: false,
+    alignment: "center",
+  },
 };
 const BUSY = ["extracting", "transcribing", "converting_hinglish", "exporting"];
 const BUSY_TEXT = {
@@ -528,13 +636,25 @@ function renderOverlay(force = false) {
   const unit = (Math.min(video.videoWidth, video.videoHeight) / 1080) * s;
   const fontPx = st.size * unit;
   const fs = fontScale(st.font);
+  const letterSpacePx = (st.letterSpacing || 0) * unit;
+  const wordSpacePx = (st.wordSpacing || 0) * unit;
+  const lineH = st.lineSpacing || fs;
+  const hasShadow = !st.background && (st.shadow > 0);
+  const shadowPx = (st.shadow || 0) * unit;
+
   Object.assign(captionBox.style, {
     fontFamily: `"${st.font}", sans-serif`,
     fontSize: fontPx + "px",
-    lineHeight: fs,
+    lineHeight: String(lineH),
+    letterSpacing: letterSpacePx + "px",
+    wordSpacing: wordSpacePx + "px",
+    fontWeight: st.bold === false ? "500" : "800",
+    fontStyle: st.italic ? "italic" : "normal",
+    textAlign: st.alignment || "center",
     bottom: st.position + "%",
     color: st.color,
-    webkitTextStroke: st.background ? "0" : `${st.outline * unit * 2}px ${st.outlineColor}`,
+    webkitTextStroke: st.background ? "0" : `${(st.outline || 0) * unit * 2}px ${st.outlineColor || "#000"}`,
+    textShadow: hasShadow ? `0 ${shadowPx * 0.8}px ${shadowPx * 1.5}px ${st.shadowColor || "#000000"}` : "none",
     paintOrder: "stroke fill",
   });
   captionBox.classList.toggle("boxed", st.background);
@@ -938,23 +1058,52 @@ document.addEventListener("keydown", (e) => {
 
 // ---------------- style panel ----------------
 const ctl = {
-  font: $("#sFont"), size: $("#sSize"), position: $("#sPos"), color: $("#sColor"),
-  highlight: $("#sHighlight"), highlightColor: $("#sHlColor"), uppercase: $("#sUpper"),
-  background: $("#sBg"), bgColor: $("#sBgColor"), outline: $("#sOutline"), bgOpacity: $("#sBgOp"),
+  font: $("#sFont"),
+  size: $("#sSize"),
+  position: $("#sPos"),
+  color: $("#sColor"),
+  highlight: $("#sHighlight"),
+  highlightColor: $("#sHlColor"),
+  uppercase: $("#sUpper"),
+  background: $("#sBg"),
+  bgColor: $("#sBgColor"),
+  bgOpacity: $("#sBgOp"),
+  outline: $("#sOutline"),
+  outlineColor: $("#sOutlineColor"),
+  letterSpacing: $("#sLetterSpacing"),
+  lineSpacing: $("#sLineSpacing"),
+  wordSpacing: $("#sWordSpacing"),
+  shadow: $("#sShadow"),
+  shadowColor: $("#sShadowColor"),
+  bold: $("#sBold"),
+  italic: $("#sItalic"),
 };
+
 function syncStyleControls() {
   const st = state.style;
   for (const [k, el] of Object.entries(ctl)) {
+    if (!el) continue;
     if (el.type === "checkbox") el.checked = !!st[k];
-    else if (k === "bgOpacity") el.value = Math.round(st[k] * 100);
-    else el.value = st[k];
+    else if (k === "bgOpacity") el.value = Math.round((st[k] ?? 0.6) * 100);
+    else el.value = st[k] ?? "";
   }
-  $("#oSize").textContent = st.size;
-  $("#oPos").textContent = st.position + "%";
-  $("#oOutline").textContent = st.outline;
-  $("#oBgOp").textContent = Math.round(st.bgOpacity * 100) + "%";
-  $("#fOutline").hidden = st.background;
-  $("#fBgOp").hidden = !st.background;
+  if ($("#oSize")) $("#oSize").textContent = st.size;
+  if ($("#oPos")) $("#oPos").textContent = st.position + "%";
+  if ($("#oOutline")) $("#oOutline").textContent = st.outline ?? 0;
+  if ($("#oBgOp")) $("#oBgOp").textContent = Math.round((st.bgOpacity ?? 0.6) * 100) + "%";
+  if ($("#oLetterSpacing")) $("#oLetterSpacing").textContent = (st.letterSpacing ?? 0) + "px";
+  if ($("#oLineSpacing")) $("#oLineSpacing").textContent = (st.lineSpacing ?? 1.25);
+  if ($("#oWordSpacing")) $("#oWordSpacing").textContent = (st.wordSpacing ?? 0) + "px";
+  if ($("#oShadow")) $("#oShadow").textContent = (st.shadow ?? 0) + "px";
+
+  if ($("#fOutline")) $("#fOutline").hidden = !!st.background;
+  if ($("#fShadow")) $("#fShadow").hidden = !!st.background;
+  if ($("#fBgOp")) $("#fBgOp").hidden = !st.background;
+
+  // Sync alignment segmented control
+  $("#alignControl .seg-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.align === (st.alignment || "center"));
+  });
 }
 for (const [k, el] of Object.entries(ctl)) {
   el.addEventListener("input", () => {
@@ -973,6 +1122,49 @@ $("#resetStyle").onclick = () => {
   renderOverlay(true);
   if (state.current) scheduleSave();
 };
+
+// Alignment segmented buttons
+$("#alignControl .seg-btn").forEach((btn) => {
+  btn.onclick = () => {
+    state.style.alignment = btn.dataset.align;
+    syncStyleControls();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  };
+});
+
+// Style preset chips
+$(".preset-chip").forEach((chip) => {
+  chip.onclick = () => {
+    $(".preset-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    const pName = chip.dataset.preset;
+    if (PRESETS[pName]) {
+      state.style = { ...state.style, ...PRESETS[pName] };
+      syncStyleControls();
+      renderOverlay(true);
+      if (state.current) scheduleSave();
+      toast(`Applied ${chip.querySelector(".preset-name")?.textContent || pName} style!`);
+    }
+  };
+});
+
+// ---------------- mobile navigation ----------------
+$("#mobileBottomNav .m-nav-btn").forEach((btn) => {
+  btn.onclick = () => {
+    $("#mobileBottomNav .m-nav-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    const view = btn.dataset.view;
+    if (view === "player") {
+      document.body.classList.remove("mobile-drawer-open");
+    } else {
+      document.body.classList.add("mobile-drawer-open");
+      // Switch active sidebar tab and panel
+      $(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === view));
+      $(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === view));
+    }
+  };
+});
 
 // ---------------- tabs ----------------
 $$(".tab").forEach((t) => (t.onclick = () => {
