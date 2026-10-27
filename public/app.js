@@ -473,7 +473,9 @@ function applyStatus(p) {
 
   const ready = status === "ready";
   $("#exportBtn").disabled = !ready || !state.captions.length;
-  $("#exportBtn").textContent = status === "exporting" ? "Exporting…" : "Export video";
+  $("#exportBtn").innerHTML = status === "exporting"
+    ? `<div class="spinner" style="width:12px;height:12px;border-width:2px;margin-right:4px;"></div> <span>Exporting…</span>`
+    : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg> <span>Export<span class="export-text-long"> Video</span></span>`;
   $("#srtBtn").disabled = !state.captions.length;
   $("#retryBtn").hidden = !(ready || status === "error");
 
