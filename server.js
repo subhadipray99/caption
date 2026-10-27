@@ -477,18 +477,26 @@ async function transcribe(id, targetLang = "auto") {
   }
 
   // If user requested Hinglish, convert Devanagari Hindi to natural Romanised Hinglish script
+  let hinglishFailed = false;
   if (targetLang === "hinglish") {
     update(id, { status: "converting_hinglish" });
     const openrouterKey = process.env.OPENROUTER_API_KEY;
     if (!openrouterKey) {
       console.warn("OPENROUTER_API_KEY is missing from environment! Hinglish conversion cannot run without it.");
+      hinglishFailed = true;
     } else {
       try {
         console.log(`Starting Hinglish transliteration for project ${id} with OpenRouter...`);
         finalCaptions = await convertHindiToHinglish(finalCaptions, openrouterKey);
-        console.log(`Hinglish transliteration successful for project ${id}`);
+        if (finalCaptions.success === false) {
+          hinglishFailed = true;
+          console.warn(`Hinglish transliteration incomplete for project ${id}`);
+        } else {
+          console.log(`Hinglish transliteration successful for project ${id}`);
+        }
       } catch (hinglishErr) {
         console.error("Hinglish conversion error:", hinglishErr.message);
+        hinglishFailed = true;
       }
     }
   }
@@ -496,10 +504,59 @@ async function transcribe(id, targetLang = "auto") {
   update(id, {
     status: "ready",
     progress: 100,
-    language: targetLang === "hinglish" ? "Hinglish (Romanised)" : (result.language_code || null),
+    language: (targetLang === "hinglish" && !hinglishFailed) ? "Hinglish (Romanised)" : (targetLang === "hinglish" ? "Hindi (hi-IN)" : (result.language_code || null)),
     captions: finalCaptions,
+    targetLang,
+    hinglishFailed,
   });
 }
+
+// ---------- retry Hinglish transliteration without re-running Sarvam ----------
+app.post("/api/projects/:id/retry-hinglish", async (req, res) => {
+  const p = load(req.params.id);
+  if (!p) return res.status(404).json({ error: "Project not found" });
+  if (!p.captions || !p.captions.length) {
+    return res.status(400).json({ error: "No captions found to convert." });
+  }
+
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openrouterKey) {
+    return res.status(500).json({ error: "OPENROUTER_API_KEY is not configured on server." });
+  }
+
+  update(p.id, { status: "converting_hinglish", hinglishFailed: false });
+
+  try {
+    console.log(`Retrying Hinglish transliteration for project ${p.id}...`);
+    const convertedCaptions = await convertHindiToHinglish(p.captions, openrouterKey);
+    const failed = convertedCaptions.success === false;
+
+    const updated = update(p.id, {
+      status: "ready",
+      captions: convertedCaptions,
+      language: failed ? "Hindi (hi-IN)" : "Hinglish (Romanised)",
+      targetLang: "hinglish",
+      hinglishFailed: failed,
+    });
+
+    if (failed) {
+      return res.status(502).json({
+        error: "Hinglish could not be generated, give it another try? [free]",
+        project: updated,
+      });
+    }
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Hinglish retry failed:", err.message);
+    const updated = update(p.id, {
+      status: "ready",
+      hinglishFailed: true,
+      targetLang: "hinglish",
+    });
+    return res.status(500).json({ error: err.message, project: updated });
+  }
+});
 
 // ---------- export (burn captions into video) ----------
 app.post("/api/projects/:id/export", (req, res) => {

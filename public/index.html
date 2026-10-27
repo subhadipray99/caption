@@ -154,6 +154,23 @@
         <p>No captions yet</p>
         <span>Upload a video and start transcription to generate word-timed subtitles.</span>
       </div>
+      <!-- Hinglish Retry Card (shown when OpenRouter translation failed) -->
+      <div class="hinglish-alert-card" id="hinglishAlertCard" hidden>
+        <div class="hinglish-alert-title">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Hinglish Incomplete</span>
+        </div>
+        <p class="hinglish-alert-desc">Speech was transcribed in Hindi. OpenRouter translation was interrupted.</p>
+        <button class="btn btn-warning btn-sm" id="retryHinglishBtn" type="button">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          <span>Hinglish could not be generated, give it another try? [free]</span>
+        </button>
+      </div>
       <ul class="caption-list" id="captionList"></ul>
     </section>
 
@@ -226,6 +243,17 @@
       </div>
       <h3>No video selected</h3>
       <p>Drop a clip on the left sidebar to start editing and generate captions.</p>
+    </div>
+
+    <!-- Stage Floating Hinglish Banner -->
+    <div class="stage-hinglish-banner" id="stageHinglishBanner" hidden>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #d97706; flex-shrink: 0;">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>Captions in Hindi</span>
+      <button class="btn btn-warning btn-xs" id="retryHinglishStageBtn" type="button">
+        <span>Hinglish could not be generated, give it another try? [free]</span>
+      </button>
     </div>
 
     <div class="player" id="player" hidden>

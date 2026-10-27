@@ -368,6 +368,22 @@ function applyStatus(p) {
   $("#exportBtn").textContent = status === "exporting" ? "Exporting…" : "Export video";
   $("#srtBtn").disabled = !state.captions.length;
   $("#retryBtn").hidden = !(ready || status === "error");
+
+  // Detect if Hinglish conversion was requested but captions remain in Hindi (Devanagari)
+  const isHinglishTarget = p?.targetLang === "hinglish" || (p?.language && p.language.includes("Hinglish"));
+  const hasDevanagari = (state.captions || []).some(c => /[ऀ-ॿ]/.test(c.text || ""));
+  const isHinglishFailed = Boolean(p && (p.hinglishFailed || (isHinglishTarget && hasDevanagari)));
+
+  const alertCard = $("#hinglishAlertCard");
+  const stageBanner = $("#stageHinglishBanner");
+
+  if (isHinglishFailed && ready) {
+    if (alertCard) alertCard.hidden = false;
+    if (stageBanner) stageBanner.hidden = false;
+  } else {
+    if (alertCard) alertCard.hidden = true;
+    if (stageBanner) stageBanner.hidden = true;
+  }
 }
 
 async function startTranscribe() {
@@ -385,6 +401,61 @@ async function startTranscribe() {
 }
 $("#startTranscribeBtn").onclick = startTranscribe;
 $("#retryBtn").onclick = startTranscribe;
+
+async function retryHinglish() {
+  if (!state.current) return;
+  const cardBtn = $("#retryHinglishBtn");
+  const stageBtn = $("#retryHinglishStageBtn");
+
+  const setBusy = (busy) => {
+    if (cardBtn) {
+      cardBtn.disabled = busy;
+      cardBtn.innerHTML = busy
+        ? `<div class="spinner" style="width:13px;height:13px;border-width:2px;margin-right:6px;"></div> <span>Translating to Hinglish [free]…</span>`
+        : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> <span>Hinglish could not be generated, give it another try? [free]</span>`;
+    }
+    if (stageBtn) {
+      stageBtn.disabled = busy;
+      stageBtn.innerHTML = busy
+        ? `<div class="spinner" style="width:12px;height:12px;border-width:2px;margin-right:4px;"></div> <span>Translating [free]…</span>`
+        : `<span>Hinglish could not be generated, give it another try? [free]</span>`;
+    }
+  };
+
+  setBusy(true);
+  toast("Translating speech to Hinglish [free]…");
+
+  try {
+    const updated = await api(`/api/projects/${state.current.id}/retry-hinglish`, {
+      method: "POST"
+    });
+    state.current = updated;
+    state.captions = updated.captions || [];
+    state.undo = [];
+    applyStatus(updated);
+    renderAll();
+    toast("Hinglish captions generated successfully!");
+  } catch (err) {
+    console.error("Retry Hinglish error:", err);
+    toast(err.message || "Hinglish transliteration could not finish. Please try again.");
+    if (state.current) {
+      const p = await api(`/api/projects/${state.current.id}`).catch(() => null);
+      if (p) {
+        state.current = p;
+        state.captions = p.captions || state.captions;
+        applyStatus(p);
+        renderAll();
+      }
+    }
+  } finally {
+    setBusy(false);
+  }
+}
+
+const retryHinglishBtn = $("#retryHinglishBtn");
+if (retryHinglishBtn) retryHinglishBtn.onclick = retryHinglish;
+const retryHinglishStageBtn = $("#retryHinglishStageBtn");
+if (retryHinglishStageBtn) retryHinglishStageBtn.onclick = retryHinglish;
 
 // Poll while anything is processing.
 let isPolling = false;
