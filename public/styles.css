@@ -968,27 +968,27 @@ input[type=color] {
 /* Dialog & Backdrop (Modern Web Guidance compliant) */
 dialog.billing-dialog:modal,
 dialog.billing-dialog[open] {
-  border: none;
+  border: 1px solid #e2e8f0;
   padding: 0;
-  border-radius: 18px;
-  background: #111215;
-  color: #f1f5f9;
-  box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.09);
-  max-width: 520px;
-  width: 94vw;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #090d16;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  max-width: 460px;
+  width: 92vw;
   margin: auto;
   overscroll-behavior: contain;
-  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 dialog.billing-dialog::backdrop {
-  background: rgba(4, 5, 8, 0.78);
+  background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(8px);
   overscroll-behavior: contain;
 }
 @keyframes modalFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.96) translateY(10px);
+    transform: scale(0.97) translateY(8px);
   }
   to {
     opacity: 1;
@@ -1000,7 +1000,7 @@ dialog.billing-dialog::backdrop {
   padding: 22px 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1012,41 +1012,25 @@ dialog.billing-dialog::backdrop {
   justify-content: space-between;
   gap: 12px;
 }
-.billing-header-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.billing-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: rgba(255, 214, 10, 0.12);
-  border: 1px solid rgba(255, 214, 10, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.billing-header h3 {
+.billing-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: #090d16;
   letter-spacing: -0.02em;
 }
 .billing-subtitle {
   margin: 3px 0 0;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 12.5px;
+  color: #64748b;
 }
 .billing-close-btn {
   background: transparent;
   border: none;
-  color: #64748b;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1055,134 +1039,102 @@ dialog.billing-dialog::backdrop {
   flex-shrink: 0;
 }
 .billing-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f1f5f9;
+  background: #f1f5f9;
+  color: #090d16;
 }
 
-/* Balance Banner */
-.balance-banner {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 12px 16px;
+/* Balance & Rate Bar */
+.balance-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.balance-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.balance-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-  font-weight: 600;
-}
-.balance-value {
-  font-size: 15px;
-  color: #e2e8f0;
-}
-.balance-value strong {
-  font-size: 19px;
-  color: #ffd60a;
-  font-weight: 700;
-}
-.balance-badge span {
-  font-size: 11px;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-/* Currency Toggle Bar */
-.billing-currency-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 2px;
-}
-.currency-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-}
-.currency-toggle {
-  display: flex;
-  background: #1a1b20;
-  padding: 3px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 9px 12px;
 }
-.currency-tab-btn {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.currency-tab-btn:hover {
-  color: #f1f5f9;
-}
-.currency-tab-btn.active {
-  background: #252830;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-/* Pricing Rate Chip */
-.pricing-rate-chip {
+.balance-bar-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 214, 10, 0.08);
-  border: 1px solid rgba(255, 214, 10, 0.22);
-  padding: 8px 12px;
-  border-radius: 9px;
-  font-size: 12px;
-  color: #fef08a;
+  gap: 7px;
+  font-size: 13px;
+  color: #475569;
 }
-.chip-dot {
+.balance-bar-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ffd60a;
-  flex-shrink: 0;
+  background: #10b981;
 }
-.usd-chip {
-  background: rgba(56, 189, 248, 0.08);
-  border-color: rgba(56, 189, 248, 0.25);
-  color: #bae6fd;
+.balance-bar-left strong {
+  color: #090d16;
+  font-weight: 700;
 }
-.chip-paypal {
-  background: #38bdf8;
+.balance-rate-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
-/* PayPal Exclusive Notice */
-.paypal-notice-card {
+/* Currency Nav Tabs */
+.currency-nav {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 9px;
+  gap: 2px;
+}
+.currency-nav-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.currency-nav-btn:hover {
+  color: #090d16;
+}
+.currency-nav-btn.active {
+  background: #ffffff;
+  color: #090d16;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+.paypal-pill {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* USD Info Banner */
+.usd-info-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(2, 132, 199, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  gap: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 9px;
-  padding: 10px 12px;
-  font-size: 11.5px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: #0369a1;
   line-height: 1.4;
-  color: #e0f2fe;
-}
-.paypal-notice-card strong {
-  color: #38bdf8;
+  margin-bottom: 10px;
 }
 
 /* Packages Grid */
@@ -1193,127 +1145,114 @@ dialog.billing-dialog::backdrop {
 }
 .package-card {
   position: relative;
-  background: #17181d;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
   border-radius: 12px;
-  padding: 14px 14px 12px;
+  padding: 13px 14px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   transition: all 0.15s ease;
   user-select: none;
 }
 .package-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: #1d1e24;
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 .package-card.selected {
-  border-color: #ffd60a;
-  background: rgba(255, 214, 10, 0.07);
-  box-shadow: 0 0 16px rgba(255, 214, 10, 0.15);
+  border-color: #1d4ed8;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #1d4ed8, 0 4px 12px rgba(29, 78, 216, 0.08);
 }
-.package-header {
+.pkg-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
 }
-.package-name {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-}
-.package-card.selected .package-name {
-  color: #ffd60a;
-}
-.package-minutes {
-  font-size: 22px;
+.pkg-mins {
+  font-size: 21px;
   font-weight: 800;
-  color: #fff;
+  color: #090d16;
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
-.package-minutes span {
+.package-card.selected .pkg-mins {
+  color: #1d4ed8;
+}
+.pkg-unit {
   font-size: 12px;
   font-weight: 600;
-  color: #94a3b8;
-}
-.package-price {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffd60a;
-}
-.package-per-min {
-  font-size: 11px;
   color: #64748b;
 }
-
-/* Tags on package cards */
-.package-tag {
+.pkg-price {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #475569;
+}
+.package-card.selected .pkg-price {
+  color: #1e40af;
+}
+.pkg-badge {
   position: absolute;
-  top: -8px;
+  top: 9px;
   right: 10px;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  padding: 2px 7px;
+  border-radius: 5px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.package-tag.popular {
-  background: #f59e0b;
-  color: #000;
-}
-.package-tag.value {
-  background: #10b981;
-  color: #000;
+  letter-spacing: 0.03em;
 }
 
-/* Custom Amount Box */
-.custom-amount-box {
-  background: #17181d;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.custom-input-wrap {
+/* Custom Amount Row */
+.custom-amount-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #0f1013;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  padding: 0 12px;
-  height: 38px;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-top: 10px;
   transition: border-color 0.15s ease;
 }
-.custom-input-wrap:focus-within {
-  border-color: #ffd60a;
+.custom-amount-row:focus-within {
+  border-color: #1d4ed8;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
 }
-.custom-currency-symbol {
+.custom-input-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.currency-prefix {
   font-size: 14px;
   font-weight: 700;
-  color: #ffd60a;
+  color: #64748b;
 }
-.custom-input-wrap input {
+.custom-input-box input {
   background: transparent;
   border: none;
-  color: #fff;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
+  color: #090d16;
   width: 100%;
   outline: none;
 }
-.custom-calc-text {
+.custom-calc-result {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: #64748b;
+  white-space: nowrap;
 }
-.custom-calc-text strong {
-  color: #ffd60a;
+.custom-calc-result strong {
+  color: #1d4ed8;
+  font-weight: 700;
 }
 
 /* Modal Footer & Pay Button */
@@ -1322,72 +1261,67 @@ dialog.billing-dialog::backdrop {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 2px;
 }
-.billing-summary {
+.summary-block {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
-.summary-label {
+.summary-caption {
   font-size: 11px;
   text-transform: uppercase;
   color: #64748b;
   font-weight: 600;
+  letter-spacing: 0.03em;
 }
-.summary-val {
-  font-size: 14px;
+.summary-amount {
+  font-size: 14.5px;
   font-weight: 700;
-  color: #fff;
+  color: #090d16;
 }
 .btn-checkout {
-  padding: 0 20px;
-  height: 42px;
-  font-size: 13.5px;
+  padding: 0 22px;
+  height: 40px;
+  font-size: 13px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #ffd60a;
-  color: #000;
+  background: #1d4ed8;
+  color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
   transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.22);
 }
 .btn-checkout:hover {
-  background: #ffea70;
-  box-shadow: 0 4px 14px rgba(255, 214, 10, 0.35);
+  background: #1e40af;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.32);
   transform: translateY(-1px);
 }
-.billing-security-note {
+.billing-secure-badge {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: #94a3b8;
+  margin-top: -4px;
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 480px) {
   .credit-pill {
-    padding: 0 6px !important;
+    padding: 0 8px !important;
     font-size: 11px;
     height: 28px;
   }
-  .credit-pill svg {
-    width: 12px;
-    height: 12px;
-  }
-  .credit-add-icon {
-    width: 14px;
-    height: 14px;
-    font-size: 10px;
-  }
   .billing-modal-content {
-    padding: 16px 14px;
+    padding: 18px 16px;
     gap: 12px;
   }
   .packages-grid {
@@ -1395,9 +1329,9 @@ dialog.billing-dialog::backdrop {
     gap: 8px;
   }
   .package-card {
-    padding: 10px;
+    padding: 10px 12px;
   }
-  .package-minutes {
+  .pkg-mins {
     font-size: 18px;
   }
   .billing-footer {

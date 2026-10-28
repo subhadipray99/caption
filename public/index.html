@@ -488,193 +488,161 @@
   <!-- Minute Recharge / Billing Modal -->
   <dialog id="billingModal" class="billing-dialog">
     <div class="billing-modal-content">
+      <!-- Modal Header -->
       <div class="billing-header">
-        <div class="billing-header-title">
-          <div class="billing-icon-wrap">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="none" style="color: #ffd60a;">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-          </div>
-          <div>
-            <h3>Get Transcription Minutes</h3>
-            <p class="billing-subtitle">Pay as you go · No monthly subscription · Minutes never expire</p>
-          </div>
+        <div>
+          <h3 class="billing-title">Add Minutes</h3>
+          <p class="billing-subtitle">Pay as you go · Never expires · Add anytime</p>
         </div>
         <button type="button" class="billing-close-btn" id="closeBillingModalBtn" aria-label="Close dialog">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
 
-      <!-- Current Balance Banner -->
-      <div class="balance-banner">
-        <div class="balance-left">
-          <span class="balance-label">Current Balance</span>
-          <span class="balance-value"><strong id="modalBalanceVal">--</strong> minutes</span>
+      <!-- Balance & Rate Bar -->
+      <div class="balance-bar">
+        <div class="balance-bar-left">
+          <span class="balance-bar-dot"></span>
+          <span>Balance: <strong id="modalBalanceVal">--</strong> mins</span>
         </div>
-        <div class="balance-badge">
-          <span>+ Add minutes anytime</span>
-        </div>
+        <span class="balance-rate-tag" id="balanceRateTag">₹0.50 / min</span>
       </div>
 
-      <!-- Currency Switcher Toggle -->
-      <div class="billing-currency-bar">
-        <span class="currency-label">Currency:</span>
-        <div class="currency-toggle" role="tablist">
-          <button type="button" class="currency-tab-btn active" id="tabInrBtn" role="tab" aria-selected="true" data-currency="INR">
-            🇮🇳 INR (₹)
-          </button>
-          <button type="button" class="currency-tab-btn" id="tabUsdBtn" role="tab" aria-selected="false" data-currency="USD">
-            🇺🇸 USD ($) · PayPal Only
-          </button>
-        </div>
+      <!-- Currency Switcher Tabs -->
+      <div class="currency-nav" role="tablist">
+        <button type="button" class="currency-nav-btn active" id="tabInrBtn" role="tab" aria-selected="true" data-currency="INR">
+          INR (₹)
+        </button>
+        <button type="button" class="currency-nav-btn" id="tabUsdBtn" role="tab" aria-selected="false" data-currency="USD">
+          USD ($) <span class="paypal-pill">PayPal</span>
+        </button>
       </div>
 
-      <!-- INR Tab Panel -->
+      <!-- INR Panel -->
       <div class="currency-panel active" id="panelInr" role="tabpanel">
-        <div class="pricing-rate-chip">
-          <span class="chip-dot"></span>
-          <span><strong>₹10 = 20 Minutes</strong> (₹0.50 / min) · Minimum recharge: ₹50</span>
-        </div>
-
         <div class="packages-grid" id="inrPackagesGrid">
           <div class="package-card selected" data-currency="INR" data-amount="50" data-minutes="100">
-            <div class="package-header">
-              <span class="package-name">Starter</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">100</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">100 <span>mins</span></div>
-            <div class="package-price">₹50</div>
-            <div class="package-per-min">₹0.50/min</div>
+            <div class="pkg-price">₹50</div>
           </div>
 
           <div class="package-card" data-currency="INR" data-amount="100" data-minutes="200">
-            <span class="package-tag popular">Popular</span>
-            <div class="package-header">
-              <span class="package-name">Creator</span>
+            <span class="pkg-badge">Popular</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">200</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">200 <span>mins</span></div>
-            <div class="package-price">₹100</div>
-            <div class="package-per-min">₹0.50/min</div>
+            <div class="pkg-price">₹100</div>
           </div>
 
           <div class="package-card" data-currency="INR" data-amount="250" data-minutes="500">
-            <div class="package-header">
-              <span class="package-name">Pro</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">500</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">500 <span>mins</span></div>
-            <div class="package-price">₹250</div>
-            <div class="package-per-min">₹0.50/min</div>
+            <div class="pkg-price">₹250</div>
           </div>
 
           <div class="package-card" data-currency="INR" data-amount="500" data-minutes="1000">
-            <span class="package-tag value">Best Value</span>
-            <div class="package-header">
-              <span class="package-name">Studio</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">1,000</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">1,000 <span>mins</span></div>
-            <div class="package-price">₹500</div>
-            <div class="package-per-min">₹0.50/min</div>
+            <div class="pkg-price">₹500</div>
           </div>
         </div>
 
-        <!-- Custom INR Amount -->
-        <div class="custom-amount-box">
-          <div class="custom-input-wrap">
-            <span class="custom-currency-symbol">₹</span>
+        <!-- Custom INR Input -->
+        <div class="custom-amount-row">
+          <div class="custom-input-box">
+            <span class="currency-prefix">₹</span>
             <input type="number" id="inrCustomAmount" min="50" step="10" placeholder="Custom amount (min ₹50)" />
           </div>
-          <div class="custom-calc-text" id="inrCustomCalc">Or enter a custom amount (min ₹50 = 100 mins)</div>
+          <div class="custom-calc-result" id="inrCustomCalc">Min ₹50 (100 mins)</div>
         </div>
       </div>
 
-      <!-- USD Tab Panel -->
+      <!-- USD Panel -->
       <div class="currency-panel" id="panelUsd" role="tabpanel" hidden>
-        <div class="pricing-rate-chip usd-chip">
-          <span class="chip-dot chip-paypal"></span>
-          <span><strong>$1 = 120 Minutes</strong> · Paid via PayPal Wallet in Razorpay</span>
-        </div>
-
-        <div class="paypal-notice-card">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #38bdf8; flex-shrink: 0;">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        <div class="usd-info-banner">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-          <span>For USD transactions, payment is accepted exclusively via <strong>PayPal Wallet</strong> through Razorpay Checkout.</span>
+          <span>USD orders are processed securely via PayPal Wallet in Razorpay.</span>
         </div>
 
         <div class="packages-grid" id="usdPackagesGrid">
           <div class="package-card selected" data-currency="USD" data-amount="1" data-minutes="120">
-            <div class="package-header">
-              <span class="package-name">Starter</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">120</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">120 <span>mins</span></div>
-            <div class="package-price">$1</div>
-            <div class="package-per-min">120 mins / $1</div>
+            <div class="pkg-price">$1</div>
           </div>
 
           <div class="package-card" data-currency="USD" data-amount="3" data-minutes="380">
-            <span class="package-tag popular">Popular</span>
-            <div class="package-header">
-              <span class="package-name">Creator</span>
+            <span class="pkg-badge">Popular</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">380</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">380 <span>mins</span></div>
-            <div class="package-price">$3</div>
-            <div class="package-per-min">126 mins / $1</div>
+            <div class="pkg-price">$3</div>
           </div>
 
           <div class="package-card" data-currency="USD" data-amount="5" data-minutes="700">
-            <div class="package-header">
-              <span class="package-name">Pro</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">700</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">700 <span>mins</span></div>
-            <div class="package-price">$5</div>
-            <div class="package-per-min">140 mins / $1</div>
+            <div class="pkg-price">$5</div>
           </div>
 
           <div class="package-card" data-currency="USD" data-amount="10" data-minutes="1500">
-            <span class="package-tag value">Best Value</span>
-            <div class="package-header">
-              <span class="package-name">Studio</span>
+            <div class="pkg-top">
+              <span class="pkg-mins">1,500</span>
+              <span class="pkg-unit">mins</span>
             </div>
-            <div class="package-minutes">1,500 <span>mins</span></div>
-            <div class="package-price">$10</div>
-            <div class="package-per-min">150 mins / $1</div>
+            <div class="pkg-price">$10</div>
           </div>
         </div>
 
-        <!-- Custom USD Amount -->
-        <div class="custom-amount-box">
-          <div class="custom-input-wrap">
-            <span class="custom-currency-symbol">$</span>
+        <!-- Custom USD Input -->
+        <div class="custom-amount-row">
+          <div class="custom-input-box">
+            <span class="currency-prefix">$</span>
             <input type="number" id="usdCustomAmount" min="1" step="1" placeholder="Custom amount (min $1)" />
           </div>
-          <div class="custom-calc-text" id="usdCustomCalc">Or enter a custom amount (min $1 = 120 mins)</div>
+          <div class="custom-calc-result" id="usdCustomCalc">Min $1 (120 mins)</div>
         </div>
       </div>
 
-      <!-- Footer Checkout Summary & Pay Button -->
+      <!-- Footer Checkout Action -->
       <div class="billing-footer">
-        <div class="billing-summary">
-          <span class="summary-label">Total:</span>
-          <span class="summary-val" id="billingSummaryText">₹50 for 100 Minutes</span>
+        <div class="summary-block">
+          <span class="summary-caption">Selected</span>
+          <span class="summary-amount" id="billingSummaryText">₹50 for 100 Minutes</span>
         </div>
         <button type="button" class="btn btn-primary btn-checkout" id="payNowBtn">
           <span>Recharge Now</span>
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"/>
             <polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
       </div>
-      <div class="billing-security-note">
+
+      <div class="billing-secure-badge">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
-        <span>Secured by Razorpay · Instant credit to your account</span>
+        <span>Secured by Razorpay · Minutes added instantly</span>
       </div>
     </div>
   </dialog>
