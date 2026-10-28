@@ -38,3 +38,49 @@ CREATE POLICY "Allow public update on projects" ON public.projects
 
 CREATE POLICY "Allow public delete on projects" ON public.projects
     FOR DELETE USING (true);
+
+
+-- 5. User Credits Table (Video Minutes Balance)
+CREATE TABLE IF NOT EXISTS public.user_credits (
+    user_id UUID PRIMARY KEY,
+    balance_seconds NUMERIC NOT NULL DEFAULT 600, -- 10 mins free starter credits
+    total_purchased_seconds NUMERIC NOT NULL DEFAULT 0,
+    total_used_seconds NUMERIC NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.user_credits ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read on user_credits" ON public.user_credits
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert on user_credits" ON public.user_credits
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public update on user_credits" ON public.user_credits
+    FOR UPDATE USING (true);
+
+-- 6. Razorpay Payments Ledger Table
+CREATE TABLE IF NOT EXISTS public.payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    razorpay_order_id TEXT NOT NULL UNIQUE,
+    razorpay_payment_id TEXT,
+    razorpay_signature TEXT,
+    amount NUMERIC NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    minutes_credited NUMERIC NOT NULL,
+    status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'captured', 'failed')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read on payments" ON public.payments
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public insert on payments" ON public.payments
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public update on payments" ON public.payments
+    FOR UPDATE USING (true);

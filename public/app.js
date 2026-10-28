@@ -183,7 +183,13 @@ async function api(path, opts = {}) {
     headers,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
+  if (!res.ok) {
+    const err = new Error(data.error || res.statusText);
+    err.status = res.status;
+    err.code = data.code;
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 let toastTimer;
@@ -501,13 +507,23 @@ async function startTranscribe() {
   if (state.captions.length && !confirm("Re-transcribe? This replaces your current captions.")) return;
   await flushSave();
   const language = $("#langSelect")?.value || "auto";
-  const p = await api(`/api/projects/${state.current.id}/transcribe`, {
-    method: "POST",
-    body: JSON.stringify({ language })
-  });
-  state.current.status = "extracting";
-  applyStatus(p);
-  loadProjects();
+  const durSec = duration();
+  try {
+    const p = await api(`/api/projects/${state.current.id}/transcribe`, {
+      method: "POST",
+      body: JSON.stringify({ language, duration: durSec })
+    });
+    state.current.status = "extracting";
+    applyStatus(p);
+    loadProjects();
+    loadUserBalance();
+  } catch (err) {
+    if (err.status === 402 || err.code === "INSUFFICIENT_MINUTES") {
+      openBillingModal(err.data?.requiredMinutes);
+      return;
+    }
+    toast(err.message || "Failed to start transcription");
+  }
 }
 $("#startTranscribeBtn").onclick = startTranscribe;
 $("#retryBtn").onclick = startTranscribe;
@@ -1152,9 +1168,9 @@ $(".preset-chip").forEach((chip) => {
 });
 
 // ---------------- mobile navigation ----------------
-$("#mobileBottomNav .m-nav-btn").forEach((btn) => {
+$$("#mobileBottomNav .m-nav-btn").forEach((btn) => {
   btn.onclick = () => {
-    $("#mobileBottomNav .m-nav-btn").forEach((b) => b.classList.remove("active"));
+    $$("#mobileBottomNav .m-nav-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     const view = btn.dataset.view;
     if (view === "player") {
@@ -1162,8 +1178,8 @@ $("#mobileBottomNav .m-nav-btn").forEach((btn) => {
     } else {
       document.body.classList.add("mobile-drawer-open");
       // Switch active sidebar tab and panel
-      $(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === view));
-      $(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === view));
+      $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === view));
+      $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === view));
     }
   };
 });
@@ -1206,6 +1222,317 @@ $("#srtBtn").onclick = () => {
 
 window.addEventListener("beforeunload", () => { if (saveTimer) flushSave(); });
 
+// ---------------- billing & minute recharge (Razorpay) ----------------
+let currentCurrency = "INR";
+let selectedAmount = 50;
+let selectedMinutes = 100;
+
+const billingModal = $("#billingModal");
+const creditBtn = $("#creditBtn");
+const creditBalanceText = $("#creditBalanceText");
+const modalBalanceVal = $("#modalBalanceVal");
+const billingSummaryText = $("#billingSummaryText");
+const tabInrBtn = $("#tabInrBtn");
+const tabUsdBtn = $("#tabUsdBtn");
+const panelInr = $("#panelInr");
+const panelUsd = $("#panelUsd");
+const inrCustomAmount = $("#inrCustomAmount");
+const usdCustomAmount = $("#usdCustomAmount");
+const inrCustomCalc = $("#inrCustomCalc");
+const usdCustomCalc = $("#usdCustomCalc");
+const payNowBtn = $("#payNowBtn");
+const closeBillingModalBtn = $("#closeBillingModalBtn");
+
+async function loadUserBalance() {
+  try {
+    const data = await api("/api/billing/balance");
+    if (data && data.loggedIn) {
+      const mins = Math.round(data.balanceMinutes);
+      if (creditBalanceText) creditBalanceText.textContent = `${mins}m`;
+      if (modalBalanceVal) modalBalanceVal.textContent = mins;
+    } else {
+      if (creditBalanceText) creditBalanceText.textContent = "10m";
+      if (modalBalanceVal) modalBalanceVal.textContent = "10";
+    }
+  } catch (e) {
+    console.warn("loadUserBalance error:", e);
+  }
+}
+
+function updateBillingSummary() {
+  if (billingSummaryText) {
+    if (currentCurrency === "INR") {
+      billingSummaryText.textContent = `₹${selectedAmount} for ${selectedMinutes.toLocaleString()} Minutes`;
+    } else {
+      billingSummaryText.textContent = `$${selectedAmount} for ${selectedMinutes.toLocaleString()} Minutes`;
+    }
+  }
+}
+
+function selectCurrency(curr) {
+  currentCurrency = curr;
+  if (curr === "INR") {
+    tabInrBtn?.classList.add("active");
+    tabInrBtn?.setAttribute("aria-selected", "true");
+    tabUsdBtn?.classList.remove("active");
+    tabUsdBtn?.setAttribute("aria-selected", "false");
+    if (panelInr) { panelInr.hidden = false; panelInr.classList.add("active"); }
+    if (panelUsd) { panelUsd.hidden = true; panelUsd.classList.remove("active"); }
+
+    if (!inrCustomAmount?.value) {
+      const card = $("#inrPackagesGrid .package-card");
+      if (card) {
+        $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedAmount = Number(card.dataset.amount);
+        selectedMinutes = Number(card.dataset.minutes);
+      }
+    }
+  } else {
+    tabUsdBtn?.classList.add("active");
+    tabUsdBtn?.setAttribute("aria-selected", "true");
+    tabInrBtn?.classList.remove("active");
+    tabInrBtn?.setAttribute("aria-selected", "false");
+    if (panelUsd) { panelUsd.hidden = false; panelUsd.classList.add("active"); }
+    if (panelInr) { panelInr.hidden = true; panelInr.classList.remove("active"); }
+
+    if (!usdCustomAmount?.value) {
+      const card = $("#usdPackagesGrid .package-card");
+      if (card) {
+        $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedAmount = Number(card.dataset.amount);
+        selectedMinutes = Number(card.dataset.minutes);
+      }
+    }
+  }
+  updateBillingSummary();
+}
+
+function openBillingModal(requiredMins = null) {
+  if (!billingModal) return;
+  loadUserBalance();
+  if (requiredMins) {
+    toast(`Video requires ~${requiredMins} minutes. Please top up your balance.`);
+  }
+  billingModal.showModal();
+}
+
+function closeBillingModal() {
+  if (billingModal && billingModal.open) {
+    billingModal.close();
+  }
+}
+
+// Attach event listeners for currency switcher
+tabInrBtn?.addEventListener("click", () => selectCurrency("INR"));
+tabUsdBtn?.addEventListener("click", () => selectCurrency("USD"));
+
+// INR Package Cards
+$$("#inrPackagesGrid .package-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected");
+    if (inrCustomAmount) inrCustomAmount.value = "";
+    if (inrCustomCalc) inrCustomCalc.textContent = "Or enter a custom amount (min ₹50 = 100 mins)";
+    selectedAmount = Number(card.dataset.amount);
+    selectedMinutes = Number(card.dataset.minutes);
+    updateBillingSummary();
+  });
+});
+
+// USD Package Cards
+$$("#usdPackagesGrid .package-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected");
+    if (usdCustomAmount) usdCustomAmount.value = "";
+    if (usdCustomCalc) usdCustomCalc.textContent = "Or enter a custom amount (min $1 = 120 mins)";
+    selectedAmount = Number(card.dataset.amount);
+    selectedMinutes = Number(card.dataset.minutes);
+    updateBillingSummary();
+  });
+});
+
+// Custom INR input
+inrCustomAmount?.addEventListener("input", () => {
+  const val = Number(inrCustomAmount.value);
+  $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+  if (val >= 50) {
+    const mins = Math.floor(val * 2);
+    selectedAmount = val;
+    selectedMinutes = mins;
+    if (inrCustomCalc) inrCustomCalc.innerHTML = `Gives <strong>${mins.toLocaleString()}</strong> Minutes (Rate: ₹10 = 20 mins)`;
+    updateBillingSummary();
+  } else if (val > 0) {
+    if (inrCustomCalc) inrCustomCalc.textContent = "Minimum recharge amount is ₹50 (100 Minutes)";
+  } else {
+    if (inrCustomCalc) inrCustomCalc.textContent = "Or enter a custom amount (min ₹50 = 100 mins)";
+  }
+});
+
+// Custom USD input
+usdCustomAmount?.addEventListener("input", () => {
+  const val = Number(usdCustomAmount.value);
+  $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
+  if (val >= 1) {
+    let mins;
+    if (val === 1) mins = 120;
+    else if (val === 3) mins = 380;
+    else if (val === 5) mins = 700;
+    else if (val === 10) mins = 1500;
+    else mins = Math.floor(val * 130);
+    selectedAmount = val;
+    selectedMinutes = mins;
+    if (usdCustomCalc) usdCustomCalc.innerHTML = `Gives <strong>${mins.toLocaleString()}</strong> Minutes via PayPal`;
+    updateBillingSummary();
+  } else if (val > 0) {
+    if (usdCustomCalc) usdCustomCalc.textContent = "Minimum recharge amount is $1 (120 Minutes)";
+  } else {
+    if (usdCustomCalc) usdCustomCalc.textContent = "Or enter a custom amount (min $1 = 120 mins)";
+  }
+});
+
+// Modal triggers & backdrop click
+creditBtn?.addEventListener("click", () => openBillingModal());
+closeBillingModalBtn?.addEventListener("click", () => closeBillingModal());
+billingModal?.addEventListener("click", (e) => {
+  if (e.target === billingModal) closeBillingModal();
+});
+
+// Razorpay checkout initiator
+payNowBtn?.addEventListener("click", async () => {
+  try {
+    const session = await BuzyAuth.getSession();
+    if (!session) {
+      toast("Please sign in to purchase minutes.");
+      window.location.href = "/account?mode=login";
+      return;
+    }
+
+    if (currentCurrency === "INR" && selectedAmount < 50) {
+      toast("Minimum recharge for INR is ₹50.");
+      return;
+    }
+    if (currentCurrency === "USD" && selectedAmount < 1) {
+      toast("Minimum recharge for USD is $1.");
+      return;
+    }
+
+    payNowBtn.disabled = true;
+    payNowBtn.innerHTML = `<span>Preparing Checkout…</span>`;
+
+    // 1. Create order on backend
+    const order = await api("/api/billing/create-order", {
+      method: "POST",
+      body: JSON.stringify({
+        currency: currentCurrency,
+        amount: selectedAmount,
+      }),
+    });
+
+    if (!window.Razorpay) {
+      throw new Error("Razorpay checkout SDK failed to load. Please check your internet connection.");
+    }
+
+    const options = {
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: "Buzy SI",
+      description: `${order.minutes} Transcription Minutes`,
+      image: "logo.png",
+      order_id: order.orderId,
+      prefill: {
+        email: session.user?.email || "",
+      },
+      theme: {
+        color: "#ffd60a",
+      },
+      modal: {
+        ondismiss: function () {
+          payNowBtn.disabled = false;
+          payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+        },
+      },
+      handler: async function (response) {
+        try {
+          toast("Payment received, crediting minutes…");
+          const verifyRes = await api("/api/billing/verify-payment", {
+            method: "POST",
+            body: JSON.stringify({
+              orderId: response.razorpay_order_id || order.orderId,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            }),
+          });
+
+          if (verifyRes.success) {
+            toast(`Success! ${verifyRes.minutesCredited} minutes credited to your account.`);
+            await loadUserBalance();
+            closeBillingModal();
+          } else {
+            toast("Payment verification error. Please contact support.");
+          }
+        } catch (vErr) {
+          console.error("Verification error:", vErr);
+          toast("Verification error: " + vErr.message);
+        } finally {
+          payNowBtn.disabled = false;
+          payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+        }
+      },
+    };
+
+    // User requirement: In USD mode, keep ONLY PayPal wallet mode within Razorpay
+    if (order.currency === "USD") {
+      options.config = {
+        display: {
+          blocks: {
+            wallets: {
+              name: "PayPal Wallet",
+              instruments: [
+                {
+                  method: "wallet",
+                  wallets: ["paypal"],
+                },
+              ],
+            },
+          },
+          sequence: ["block.wallets"],
+          preferences: {
+            show_default_blocks: false,
+          },
+        },
+      };
+      options.method = {
+        wallet: true,
+        card: false,
+        netbanking: false,
+        upi: false,
+        paylater: false,
+        emi: false,
+      };
+    }
+
+    const rzpInstance = new window.Razorpay(options);
+    rzpInstance.on("payment.failed", function (resp) {
+      console.error("Razorpay payment failed:", resp.error);
+      toast("Payment failed: " + (resp.error.description || resp.error.reason));
+      payNowBtn.disabled = false;
+      payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+    });
+
+    rzpInstance.open();
+  } catch (err) {
+    console.error("Payment initiation error:", err);
+    toast(err.message || "Could not start payment. Please try again.");
+    payNowBtn.disabled = false;
+    payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+  }
+});
+
 // ---------------- boot ----------------
 syncStyleControls();
+loadUserBalance();
 loadProjects().then(() => { if (state.projects[0]) openProject(state.projects[0].id); });

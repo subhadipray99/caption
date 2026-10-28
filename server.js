@@ -12,6 +12,13 @@ const { getWordTimestamps, alignTranscriptWithAcoustics, buildCaptionsFromWords 
 const { convertHindiToHinglish } = require("./lib/hinglish");
 const { supabase } = require("./lib/supabase");
 const {
+  getUserBalance,
+  addCredits,
+  deductCredits,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} = require("./lib/billing");
+const {
   isConfigured: r2Configured,
   getUploadPresignedUrl,
   getDownloadPresignedUrl,
@@ -386,19 +393,123 @@ app.delete("/api/projects/:id", async (req, res) => {
   }
 });
 
+// ---------- Auth helper ----------
+async function getAuthUser(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.split(" ")[1];
+  if (!token) return null;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (!error && user) return user;
+  } catch (e) {}
+  return null;
+}
+
+// ---------- billing & minute recharge (Razorpay) ----------
+app.get("/api/billing/config", (req, res) => {
+  res.json({
+    keyId: process.env.RAZORPAY_KEY_ID || "",
+    configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+    inrRate: "₹10 = 20 Minutes",
+    minInr: 50,
+    minUsd: 1,
+  });
+});
+
+app.get("/api/billing/balance", async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.json({ balanceMinutes: 0, balanceSeconds: 0, loggedIn: false });
+    }
+    const bal = await getUserBalance(user.id);
+    res.json({ ...bal, loggedIn: true, email: user.email });
+  } catch (err) {
+    console.error("GET /api/billing/balance error:", err);
+    res.status(500).json({ error: "Failed to fetch balance: " + err.message });
+  }
+});
+
+app.post("/api/billing/create-order", async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: "Please sign in to purchase minutes." });
+    }
+    const { currency, amount } = req.body;
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ error: "Valid amount is required." });
+    }
+
+    const orderData = await createRazorpayOrder({
+      userId: user.id,
+      userEmail: user.email,
+      currency,
+      amount: Number(amount),
+    });
+
+    res.json(orderData);
+  } catch (err) {
+    console.error("POST /api/billing/create-order error:", err);
+    res.status(400).json({ error: err.message || "Failed to create payment order." });
+  }
+});
+
+app.post("/api/billing/verify-payment", async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: "Please sign in to verify payment." });
+    }
+    const { orderId, paymentId, signature } = req.body;
+    if (!orderId || !paymentId || !signature) {
+      return res.status(400).json({ error: "Missing required payment parameters." });
+    }
+
+    const result = await verifyRazorpayPayment({
+      userId: user.id,
+      orderId,
+      paymentId,
+      signature,
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("POST /api/billing/verify-payment error:", err);
+    res.status(400).json({ error: err.message || "Payment verification failed." });
+  }
+});
+
 // ---------- transcription (Sarvam Batch STT, saaras:v4) ----------
-app.post("/api/projects/:id/transcribe", (req, res) => {
+app.post("/api/projects/:id/transcribe", async (req, res) => {
   const p = load(req.params.id);
   const targetLang = req.body?.language || "auto";
   if (["extracting", "transcribing", "converting_hinglish"].includes(p.status)) return res.json(p);
+
+  // Check user minutes balance
+  const user = await getAuthUser(req);
+  const durationSec = Math.max(1, Math.round(Number(req.body?.duration) || 60));
+  if (user) {
+    const { balanceSeconds } = await getUserBalance(user.id);
+    if (balanceSeconds < durationSec) {
+      return res.status(402).json({
+        error: "Insufficient minutes to transcribe this video.",
+        code: "INSUFFICIENT_MINUTES",
+        requiredMinutes: Math.ceil(durationSec / 60),
+        currentMinutes: Math.round((balanceSeconds / 60) * 10) / 10,
+      });
+    }
+  }
+
   res.json(update(p.id, { status: "extracting", targetLang, progress: 0, error: null }));
-  transcribe(p.id, targetLang).catch((err) => {
+  transcribe(p.id, targetLang, user?.id, durationSec).catch((err) => {
     console.error("Transcription failed:", err.message);
     update(p.id, { status: "error", error: err.message });
   });
 });
 
-async function transcribe(id, targetLang = "auto") {
+async function transcribe(id, targetLang = "auto", userId = null, durationSec = null) {
   const dir = projDir(id);
   const p = load(id);
   const audio = path.join(dir, "audio.mp3");
@@ -498,6 +609,15 @@ async function transcribe(id, targetLang = "auto") {
         console.error("Hinglish conversion error:", hinglishErr.message);
         hinglishFailed = true;
       }
+    }
+  }
+
+  // Deduct user minutes upon successful transcription
+  if (userId && durationSec) {
+    try {
+      await deductCredits(userId, durationSec);
+    } catch (deductErr) {
+      console.warn("Failed to deduct user credits:", deductErr.message);
     }
   }
 

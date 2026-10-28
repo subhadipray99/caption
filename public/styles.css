@@ -876,3 +876,486 @@ input[type=color] {
     min-width: 30px;
   }
 }
+
+/* ==========================================================================
+   Billing & Minutes Recharge Modal (Razorpay)
+   ========================================================================== */
+
+/* Topbar Credit Pill */
+.credit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 214, 10, 0.08) !important;
+  border: 1px solid rgba(255, 214, 10, 0.3) !important;
+  color: #f8fafc !important;
+  font-weight: 600;
+  padding: 0 10px !important;
+  height: 32px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.credit-pill:hover {
+  background: rgba(255, 214, 10, 0.16) !important;
+  border-color: rgba(255, 214, 10, 0.6) !important;
+  box-shadow: 0 0 12px rgba(255, 214, 10, 0.2);
+}
+.credit-add-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffd60a;
+  color: #000;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+/* Dialog & Backdrop (Modern Web Guidance compliant) */
+dialog.billing-dialog:modal {
+  border: none;
+  padding: 0;
+  border-radius: 18px;
+  background: #111215;
+  color: #f1f5f9;
+  box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.09);
+  max-width: 520px;
+  width: 94vw;
+  margin: auto;
+  overscroll-behavior: contain;
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+dialog.billing-dialog::backdrop {
+  background: rgba(4, 5, 8, 0.78);
+  backdrop-filter: blur(8px);
+  overscroll-behavior: contain;
+}
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.billing-modal-content {
+  padding: 22px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Modal Header */
+.billing-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.billing-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.billing-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 214, 10, 0.12);
+  border: 1px solid rgba(255, 214, 10, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.billing-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.billing-subtitle {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.billing-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.billing-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+/* Balance Banner */
+.balance-banner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.balance-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.balance-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+.balance-value {
+  font-size: 15px;
+  color: #e2e8f0;
+}
+.balance-value strong {
+  font-size: 19px;
+  color: #ffd60a;
+  font-weight: 700;
+}
+.balance-badge span {
+  font-size: 11px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Currency Toggle Bar */
+.billing-currency-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 2px;
+}
+.currency-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.currency-toggle {
+  display: flex;
+  background: #1a1b20;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.currency-tab-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.currency-tab-btn:hover {
+  color: #f1f5f9;
+}
+.currency-tab-btn.active {
+  background: #252830;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Pricing Rate Chip */
+.pricing-rate-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 214, 10, 0.08);
+  border: 1px solid rgba(255, 214, 10, 0.22);
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  color: #fef08a;
+}
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffd60a;
+  flex-shrink: 0;
+}
+.usd-chip {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+  color: #bae6fd;
+}
+.chip-paypal {
+  background: #38bdf8;
+}
+
+/* PayPal Exclusive Notice */
+.paypal-notice-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #e0f2fe;
+}
+.paypal-notice-card strong {
+  color: #38bdf8;
+}
+
+/* Packages Grid */
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.package-card {
+  position: relative;
+  background: #17181d;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.package-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #1d1e24;
+}
+.package-card.selected {
+  border-color: #ffd60a;
+  background: rgba(255, 214, 10, 0.07);
+  box-shadow: 0 0 16px rgba(255, 214, 10, 0.15);
+}
+.package-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.package-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+.package-card.selected .package-name {
+  color: #ffd60a;
+}
+.package-minutes {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+.package-minutes span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.package-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffd60a;
+}
+.package-per-min {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Tags on package cards */
+.package-tag {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.package-tag.popular {
+  background: #f59e0b;
+  color: #000;
+}
+.package-tag.value {
+  background: #10b981;
+  color: #000;
+}
+
+/* Custom Amount Box */
+.custom-amount-box {
+  background: #17181d;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.custom-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f1013;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 38px;
+  transition: border-color 0.15s ease;
+}
+.custom-input-wrap:focus-within {
+  border-color: #ffd60a;
+}
+.custom-currency-symbol {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffd60a;
+}
+.custom-input-wrap input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  outline: none;
+}
+.custom-calc-text {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+.custom-calc-text strong {
+  color: #ffd60a;
+}
+
+/* Modal Footer & Pay Button */
+.billing-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.billing-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.summary-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 600;
+}
+.summary-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.btn-checkout {
+  padding: 0 20px;
+  height: 42px;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffd60a;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-checkout:hover {
+  background: #ffea70;
+  box-shadow: 0 4px 14px rgba(255, 214, 10, 0.35);
+  transform: translateY(-1px);
+}
+.billing-security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+  .credit-pill {
+    padding: 0 6px !important;
+    font-size: 11px;
+    height: 28px;
+  }
+  .credit-pill svg {
+    width: 12px;
+    height: 12px;
+  }
+  .credit-add-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+  }
+  .billing-modal-content {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+  .packages-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .package-card {
+    padding: 10px;
+  }
+  .package-minutes {
+    font-size: 18px;
+  }
+  .billing-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .btn-checkout {
+    width: 100%;
+    justify-content: center;
+  }
+}
