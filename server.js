@@ -10,6 +10,7 @@ const { buildCaptions } = require("./lib/captions");
 const { buildAss } = require("./lib/ass");
 const { getWordTimestamps, alignTranscriptWithAcoustics, buildCaptionsFromWords } = require("./lib/aligner");
 const { convertHindiToHinglish } = require("./lib/hinglish");
+const { convertBengaliToBengalish } = require("./lib/bengalish");
 const { supabase } = require("./lib/supabase");
 const {
   getUserBalance,
@@ -485,7 +486,7 @@ app.post("/api/billing/verify-payment", async (req, res) => {
 app.post("/api/projects/:id/transcribe", async (req, res) => {
   const p = load(req.params.id);
   const targetLang = req.body?.language || "auto";
-  if (["extracting", "transcribing", "converting_hinglish"].includes(p.status)) return res.json(p);
+  if (["extracting", "transcribing", "converting_hinglish", "converting_bengalish"].includes(p.status)) return res.json(p);
 
   // Check user minutes balance
   const user = await getAuthUser(req);
@@ -526,10 +527,12 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
   await computePeaks(dir).catch((e) => console.warn("Waveform failed:", e.message));
   update(id, { status: "transcribing" });
 
-  // For Hinglish, transcribe in Hindi (hi-IN) first
+  // For Hinglish or Bengalish, transcribe in native script first
   let sarvamLangCode = "unknown";
   if (targetLang === "hinglish" || targetLang === "hi-IN") {
     sarvamLangCode = "hi-IN";
+  } else if (targetLang === "bengalish" || targetLang === "bn-IN") {
+    sarvamLangCode = "bn-IN";
   } else if (targetLang && targetLang !== "auto") {
     sarvamLangCode = targetLang;
   }
@@ -612,6 +615,31 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
     }
   }
 
+  // If user requested Bengalish, convert Bengali script to natural Romanised Bengalish (Banglish) script
+  let bengalishFailed = false;
+  if (targetLang === "bengalish") {
+    update(id, { status: "converting_bengalish" });
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
+    if (!openrouterKey) {
+      console.warn("OPENROUTER_API_KEY is missing from environment! Bengalish conversion cannot run without it.");
+      bengalishFailed = true;
+    } else {
+      try {
+        console.log(`Starting Bengalish transliteration for project ${id} with OpenRouter...`);
+        finalCaptions = await convertBengaliToBengalish(finalCaptions, openrouterKey);
+        if (finalCaptions.success === false) {
+          bengalishFailed = true;
+          console.warn(`Bengalish transliteration incomplete for project ${id}`);
+        } else {
+          console.log(`Bengalish transliteration successful for project ${id}`);
+        }
+      } catch (bengalishErr) {
+        console.error("Bengalish conversion error:", bengalishErr.message);
+        bengalishFailed = true;
+      }
+    }
+  }
+
   // Deduct user minutes upon successful transcription
   if (userId && durationSec) {
     try {
@@ -621,13 +649,21 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
     }
   }
 
+  let finalLanguage = result.language_code || null;
+  if (targetLang === "hinglish") {
+    finalLanguage = (!hinglishFailed) ? "Hinglish (Romanised)" : "Hindi (hi-IN)";
+  } else if (targetLang === "bengalish") {
+    finalLanguage = (!bengalishFailed) ? "Bengalish (Romanised)" : "Bengali (bn-IN)";
+  }
+
   update(id, {
     status: "ready",
     progress: 100,
-    language: (targetLang === "hinglish" && !hinglishFailed) ? "Hinglish (Romanised)" : (targetLang === "hinglish" ? "Hindi (hi-IN)" : (result.language_code || null)),
+    language: finalLanguage,
     captions: finalCaptions,
     targetLang,
     hinglishFailed,
+    bengalishFailed,
   });
 }
 
@@ -673,6 +709,53 @@ app.post("/api/projects/:id/retry-hinglish", async (req, res) => {
       status: "ready",
       hinglishFailed: true,
       targetLang: "hinglish",
+    });
+    return res.status(500).json({ error: err.message, project: updated });
+  }
+});
+
+// ---------- retry Bengalish transliteration without re-running Sarvam ----------
+app.post("/api/projects/:id/retry-bengalish", async (req, res) => {
+  const p = load(req.params.id);
+  if (!p) return res.status(404).json({ error: "Project not found" });
+  if (!p.captions || !p.captions.length) {
+    return res.status(400).json({ error: "No captions found to convert." });
+  }
+
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openrouterKey) {
+    return res.status(500).json({ error: "OPENROUTER_API_KEY is not configured on server." });
+  }
+
+  update(p.id, { status: "converting_bengalish", bengalishFailed: false });
+
+  try {
+    console.log(`Retrying Bengalish transliteration for project ${p.id}...`);
+    const convertedCaptions = await convertBengaliToBengalish(p.captions, openrouterKey);
+    const failed = convertedCaptions.success === false;
+
+    const updated = update(p.id, {
+      status: "ready",
+      captions: convertedCaptions,
+      language: failed ? "Bengali (bn-IN)" : "Bengalish (Romanised)",
+      targetLang: "bengalish",
+      bengalishFailed: failed,
+    });
+
+    if (failed) {
+      return res.status(502).json({
+        error: "Bengalish could not be generated, give it another try? [free]",
+        project: updated,
+      });
+    }
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Bengalish retry failed:", err.message);
+    const updated = update(p.id, {
+      status: "ready",
+      bengalishFailed: true,
+      targetLang: "bengalish",
     });
     return res.status(500).json({ error: err.message, project: updated });
   }

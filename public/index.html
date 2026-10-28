@@ -129,6 +129,7 @@
             <select id="langSelect">
               <option value="auto">Auto-detect Language</option>
               <option value="hinglish">Hinglish (Hindi in Roman Latin)</option>
+              <option value="bengalish">Bengalish (Bengali in Roman Latin)</option>
               <option value="hi-IN">Hindi (हिंदी)</option>
               <option value="en-IN">English</option>
               <option value="bn-IN">Bengali (বাংলা)</option>
@@ -172,7 +173,7 @@
         <p>No captions yet</p>
         <span>Upload a video and start transcription to generate word-timed subtitles.</span>
       </div>
-      <!-- Hinglish Retry Card (shown when OpenRouter translation failed) -->
+      <!-- Hinglish / Bengalish Retry Card (shown when transliteration was interrupted) -->
       <div class="hinglish-alert-card" id="hinglishAlertCard" hidden>
         <div class="hinglish-alert-title">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -180,7 +181,7 @@
           </svg>
           <span>Hinglish Incomplete</span>
         </div>
-        <p class="hinglish-alert-desc">Speech was transcribed in Hindi. OpenRouter translation was interrupted.</p>
+        <p class="hinglish-alert-desc">Speech was transcribed in native script. Roman transliteration was interrupted.</p>
         <button class="btn btn-warning btn-sm" id="retryHinglishBtn" type="button">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>

@@ -125,11 +125,12 @@ const PRESETS = {
     alignment: "center",
   },
 };
-const BUSY = ["extracting", "transcribing", "converting_hinglish", "exporting"];
+const BUSY = ["extracting", "transcribing", "converting_hinglish", "converting_bengalish", "exporting"];
 const BUSY_TEXT = {
   extracting: "Extracting audio track…",
   transcribing: "Transcribing speech…<br><small>Generating accurate word timestamps.</small>",
   converting_hinglish: "Transliterating to Hinglish…<br><small>Converting script to Romanized text.</small>",
+  converting_bengalish: "Transliterating to Bengalish…<br><small>Converting script to Romanized text.</small>",
 };
 
 const state = {
@@ -435,14 +436,14 @@ function applyStatus(p) {
 
   if (p && state.current && p.id === state.current.id) {
     // Transcription finished: pull captions in.
-    if ((prev === "extracting" || prev === "transcribing" || prev === "converting_hinglish" || prev === "uploaded") && status === "ready") {
+    if ((prev === "extracting" || prev === "transcribing" || prev === "converting_hinglish" || prev === "converting_bengalish" || prev === "uploaded") && status === "ready") {
       state.captions = p.captions || [];
       state.undo = [];
       loadPeaks();
       renderAll();
       if (state.captions.length) toast(`${state.captions.length} captions generated (${p.language || "ready"})`);
     }
-    if (prev === "extracting" && (status === "transcribing" || status === "converting_hinglish")) loadPeaks();
+    if (prev === "extracting" && (status === "transcribing" || status === "converting_hinglish" || status === "converting_bengalish")) loadPeaks();
     // Export finished.
     if (p.exportedAt && p.exportedAt !== state.lastExportedAt) {
       state.lastExportedAt = p.exportedAt;
@@ -451,7 +452,7 @@ function applyStatus(p) {
     Object.assign(state.current, { ...p, captions: undefined });
   }
 
-  if (status === "extracting" || status === "transcribing" || status === "converting_hinglish") {
+  if (status === "extracting" || status === "transcribing" || status === "converting_hinglish" || status === "converting_bengalish") {
     busy.hidden = false;
     $("#busyText").innerHTML = BUSY_TEXT[status] || "Processing…";
     busy.querySelector(".spinner").hidden = false;
@@ -485,17 +486,43 @@ function applyStatus(p) {
   $("#srtBtn").disabled = !state.captions.length;
   $("#retryBtn").hidden = !(ready || status === "error");
 
-  // Detect if Hinglish conversion was requested but captions remain in Hindi (Devanagari)
+  // Detect if Hinglish or Bengalish conversion was requested but captions remain in native script
   const isHinglishTarget = p?.targetLang === "hinglish" || (p?.language && p.language.includes("Hinglish"));
   const hasDevanagari = (state.captions || []).some(c => /[ऀ-ॿ]/.test(c.text || ""));
   const isHinglishFailed = Boolean(p && (p.hinglishFailed || (isHinglishTarget && hasDevanagari)));
 
+  const isBengalishTarget = p?.targetLang === "bengalish" || (p?.language && p.language.includes("Bengalish"));
+  const hasBengali = (state.captions || []).some(c => /[\u0980-\u09FF]/.test(c.text || ""));
+  const isBengalishFailed = Boolean(p && (p.bengalishFailed || (isBengalishTarget && hasBengali)));
+
+  const isTranslitFailed = isHinglishFailed || isBengalishFailed;
+  const langName = isBengalishTarget ? "Bengalish" : "Hinglish";
+  const origScript = isBengalishTarget ? "Bengali" : "Hindi";
+
   const alertCard = $("#hinglishAlertCard");
   const stageBanner = $("#stageHinglishBanner");
 
-  if (isHinglishFailed && ready) {
-    if (alertCard) alertCard.hidden = false;
-    if (stageBanner) stageBanner.hidden = false;
+  if (isTranslitFailed && ready) {
+    if (alertCard) {
+      alertCard.hidden = false;
+      const titleSpan = alertCard.querySelector(".hinglish-alert-title span");
+      if (titleSpan) titleSpan.textContent = `${langName} Incomplete`;
+      const descP = alertCard.querySelector(".hinglish-alert-desc");
+      if (descP) descP.textContent = `Speech was transcribed in ${origScript}. Transliteration was interrupted.`;
+      const cardBtn = $("#retryHinglishBtn");
+      if (cardBtn && !cardBtn.disabled) {
+        cardBtn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> <span>${langName} could not be generated, give it another try? [free]</span>`;
+      }
+    }
+    if (stageBanner) {
+      stageBanner.hidden = false;
+      const bannerSpan = stageBanner.querySelector("span:not(button span)");
+      if (bannerSpan) bannerSpan.textContent = `Captions in ${origScript}`;
+      const stageBtn = $("#retryHinglishStageBtn");
+      if (stageBtn && !stageBtn.disabled) {
+        stageBtn.innerHTML = `<span>${langName} could not be generated, give it another try? [free]</span>`;
+      }
+    }
   } else {
     if (alertCard) alertCard.hidden = true;
     if (stageBanner) stageBanner.hidden = true;
@@ -528,8 +555,12 @@ async function startTranscribe() {
 $("#startTranscribeBtn").onclick = startTranscribe;
 $("#retryBtn").onclick = startTranscribe;
 
-async function retryHinglish() {
+async function retryTransliteration() {
   if (!state.current) return;
+  const isBengalish = state.current.targetLang === "bengalish" || (state.current.language && state.current.language.includes("Bengalish"));
+  const langName = isBengalish ? "Bengalish" : "Hinglish";
+  const endpoint = isBengalish ? `/api/projects/${state.current.id}/retry-bengalish` : `/api/projects/${state.current.id}/retry-hinglish`;
+
   const cardBtn = $("#retryHinglishBtn");
   const stageBtn = $("#retryHinglishStageBtn");
 
@@ -537,22 +568,22 @@ async function retryHinglish() {
     if (cardBtn) {
       cardBtn.disabled = busy;
       cardBtn.innerHTML = busy
-        ? `<div class="spinner" style="width:13px;height:13px;border-width:2px;margin-right:6px;"></div> <span>Translating to Hinglish [free]…</span>`
-        : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> <span>Hinglish could not be generated, give it another try? [free]</span>`;
+        ? `<div class="spinner" style="width:13px;height:13px;border-width:2px;margin-right:6px;"></div> <span>Translating to ${langName} [free]…</span>`
+        : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> <span>${langName} could not be generated, give it another try? [free]</span>`;
     }
     if (stageBtn) {
       stageBtn.disabled = busy;
       stageBtn.innerHTML = busy
         ? `<div class="spinner" style="width:12px;height:12px;border-width:2px;margin-right:4px;"></div> <span>Translating [free]…</span>`
-        : `<span>Hinglish could not be generated, give it another try? [free]</span>`;
+        : `<span>${langName} could not be generated, give it another try? [free]</span>`;
     }
   };
 
   setBusy(true);
-  toast("Translating speech to Hinglish [free]…");
+  toast(`Translating speech to ${langName} [free]…`);
 
   try {
-    const updated = await api(`/api/projects/${state.current.id}/retry-hinglish`, {
+    const updated = await api(endpoint, {
       method: "POST"
     });
     state.current = updated;
@@ -560,10 +591,10 @@ async function retryHinglish() {
     state.undo = [];
     applyStatus(updated);
     renderAll();
-    toast("Hinglish captions generated successfully!");
+    toast(`${langName} captions generated successfully!`);
   } catch (err) {
-    console.error("Retry Hinglish error:", err);
-    toast(err.message || "Hinglish transliteration could not finish. Please try again.");
+    console.error(`Retry ${langName} error:`, err);
+    toast(err.message || `${langName} transliteration could not finish. Please try again.`);
     if (state.current) {
       const p = await api(`/api/projects/${state.current.id}`).catch(() => null);
       if (p) {
@@ -577,11 +608,12 @@ async function retryHinglish() {
     setBusy(false);
   }
 }
+const retryHinglish = retryTransliteration;
 
 const retryHinglishBtn = $("#retryHinglishBtn");
-if (retryHinglishBtn) retryHinglishBtn.onclick = retryHinglish;
+if (retryHinglishBtn) retryHinglishBtn.onclick = retryTransliteration;
 const retryHinglishStageBtn = $("#retryHinglishStageBtn");
-if (retryHinglishStageBtn) retryHinglishStageBtn.onclick = retryHinglish;
+if (retryHinglishStageBtn) retryHinglishStageBtn.onclick = retryTransliteration;
 
 // Poll while anything is processing.
 let isPolling = false;
