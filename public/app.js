@@ -1232,14 +1232,16 @@ async function loadUserBalance() {
     const data = await api("/api/billing/balance");
     const creditBalanceText = $("#creditBalanceText");
     const modalBalanceVal = $("#modalBalanceVal");
-    if (data && data.loggedIn) {
-      const mins = Math.round(data.balanceMinutes);
-      if (creditBalanceText) creditBalanceText.textContent = `${mins}m`;
-      if (modalBalanceVal) modalBalanceVal.textContent = mins;
-    } else {
-      if (creditBalanceText) creditBalanceText.textContent = "10m";
-      if (modalBalanceVal) modalBalanceVal.textContent = "10";
-    }
+    const sidebarBalanceVal = $("#sidebarBalanceVal");
+    const creditBtn = $("#creditBtn");
+
+    const mins = (data && data.loggedIn) ? Math.round(data.balanceMinutes) : 10;
+    const label = `${mins} mins`;
+
+    if (creditBalanceText) creditBalanceText.textContent = label;
+    if (modalBalanceVal) modalBalanceVal.textContent = mins;
+    if (sidebarBalanceVal) sidebarBalanceVal.textContent = mins;
+    if (creditBtn) creditBtn.title = `${mins} minutes available. Click to add more.`;
   } catch (e) {
     console.warn("loadUserBalance error:", e);
   }
@@ -1414,6 +1416,8 @@ function initBilling() {
 
   // Modal triggers & backdrop click
   if (creditBtn) creditBtn.onclick = () => openBillingModal();
+  const sidebarAddMinsBtn = $("#sidebarAddMinsBtn");
+  if (sidebarAddMinsBtn) sidebarAddMinsBtn.onclick = () => openBillingModal();
   if (closeBillingModalBtn) closeBillingModalBtn.onclick = () => closeBillingModal();
   if (billingModal) {
     billingModal.onclick = (e) => {
