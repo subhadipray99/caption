@@ -1488,26 +1488,28 @@ payNowBtn?.addEventListener("click", async () => {
 
     // User requirement: In USD mode, keep ONLY PayPal wallet mode within Razorpay
     if (order.currency === "USD") {
-      options.config = {
-        display: {
-          blocks: {
-            paypal_block: {
-              name: "Pay via PayPal",
-              instruments: [
-                {
-                  method: "wallet",
-                  wallets: ["paypal"],
-                },
-              ],
-            },
-          },
-          sequence: ["block.paypal_block"],
-          preferences: {
-            show_default_blocks: false,
+      const displayConfig = {
+        blocks: {
+          paypal_block: {
+            name: "Pay via PayPal",
+            instruments: [
+              {
+                method: "wallet",
+                wallets: ["paypal"],
+              },
+              {
+                method: "paypal",
+              },
+            ],
           },
         },
+        sequence: ["block.paypal_block"],
+        preferences: {
+          show_default_blocks: false,
+        },
       };
-      // Note: Do not pass options.method along with config.display to prevent checkout.js conflicts
+      options.config = { display: displayConfig };
+      options.display = displayConfig;
     }
 
     // Close the billing modal before opening Razorpay checkout so it doesn't block pointer events
