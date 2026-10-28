@@ -491,88 +491,20 @@
     <!-- Modal Hero Banner -->
     <div class="billing-banner-wrap">
       <button type="button" class="billing-banner-close-btn" id="closeBillingModalBtn" aria-label="Close dialog">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/>
           <line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
-      <svg class="billing-banner-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1920 525" width="100%" height="auto" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="payBg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0b1329"/>
-            <stop offset="50%" stop-color="#141f3d"/>
-            <stop offset="100%" stop-color="#090d19"/>
-          </linearGradient>
-          <linearGradient id="accentGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#3b82f6"/>
-            <stop offset="50%" stop-color="#8b5cf6"/>
-            <stop offset="100%" stop-color="#ec4899"/>
-          </linearGradient>
-          <radialGradient id="sparkleLeft" cx="15%" cy="35%" r="60%">
-            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
-            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="sparkleRight" cx="85%" cy="65%" r="60%">
-            <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-
-        <!-- Background -->
-        <rect width="1920" height="525" fill="url(#payBg)"/>
-
-        <!-- Ambient Glow -->
-        <rect width="1920" height="525" fill="url(#sparkleLeft)"/>
-        <rect width="1920" height="525" fill="url(#sparkleRight)"/>
-
-        <!-- Accent Top Border Stripe -->
-        <rect x="0" y="0" width="1920" height="10" fill="url(#accentGlow)"/>
-
-        <!-- Left: Badge Icon -->
-        <g transform="translate(100, 105)">
-          <rect x="0" y="0" width="310" height="310" rx="44" fill="#1e293b" stroke="#334155" stroke-width="4"/>
-          <circle cx="155" cy="155" r="110" fill="#2563eb" fill-opacity="0.2"/>
-          <path d="M170 55 L95 175 L145 175 L130 255 L225 135 L170 135 Z" fill="#facc15" stroke="#eab308" stroke-width="3" stroke-linejoin="round"/>
-        </g>
-
-        <!-- Middle: Headline & Rate -->
-        <g transform="translate(460, 115)">
-          <rect x="0" y="0" width="260" height="52" rx="26" fill="#1d4ed8" fill-opacity="0.25" stroke="#3b82f6" stroke-width="2.5"/>
-          <text x="130" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="800" fill="#60a5fa" text-anchor="middle" letter-spacing="1.5">⚡ TOP UP MINUTES</text>
-
-          <text x="0" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="76" font-weight="900" fill="#ffffff" letter-spacing="-1">
-            Add Transcription Time
-          </text>
-
-          <text x="0" y="220" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="52" font-weight="800" fill="#facc15">
-            ₹10 = 20 Minutes <tspan fill="#94a3b8" font-size="36" font-weight="600">(Only ₹0.50 / min)</tspan>
-          </text>
-
-          <text x="0" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="500" fill="#cbd5e1">
-            Instant recharge <tspan fill="#38bdf8">•</tspan> Never expires <tspan fill="#38bdf8">•</tspan> Add anytime
-          </text>
-        </g>
-
-        <!-- Right: Security Badge -->
-        <g transform="translate(1520, 115)">
-          <rect x="0" y="0" width="300" height="295" rx="36" fill="#1e293b" fill-opacity="0.85" stroke="#334155" stroke-width="3"/>
-          <g transform="translate(110, 45)">
-            <path d="M40 0 L75 16 C75 56 40 76 40 76 C40 76 5 56 5 16 Z" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="25,38 35,48 55,26" fill="none" stroke="#22c55e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <text x="150" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="800" fill="#f8fafc" text-anchor="middle">100% SECURE</text>
-          <text x="150" y="208" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" fill="#38bdf8" text-anchor="middle">Razorpay &amp; PayPal</text>
-          <text x="150" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="500" fill="#64748b" text-anchor="middle">Encrypted Checkout</text>
-        </g>
-      </svg>
+      <img src="billing-banner.jpg" alt="Let the words flow" class="billing-banner-img" />
     </div>
 
     <div class="billing-modal-content">
       <!-- Modal Header -->
       <div class="billing-header">
         <div>
-          <h3 class="billing-title">Select Recharge Plan</h3>
-          <p class="billing-subtitle">Instant credit to balance · Add any amount (min. ₹50 / $1)</p>
+          <h3 class="billing-title">Add Minutes</h3>
+          <p class="billing-subtitle">Pay as you go · Never expires · Add anytime</p>
         </div>
       </div>
 

@@ -1002,13 +1002,15 @@ dialog.billing-dialog::backdrop {
   position: relative;
   width: 100%;
   line-height: 0;
-  background: #0b1329;
-  border-bottom: 1px solid #1e293b;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
 }
-.billing-banner-wrap svg.billing-banner-svg {
+.billing-banner-wrap img.billing-banner-img {
   width: 100%;
   height: auto;
   display: block;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
 }
 .billing-banner-close-btn {
   position: absolute;
@@ -1016,10 +1018,11 @@ dialog.billing-dialog::backdrop {
   right: 10px;
   width: 28px;
   height: 28px;
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 50%;
-  color: #f1f5f9;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1028,9 +1031,8 @@ dialog.billing-dialog::backdrop {
   z-index: 10;
 }
 .billing-banner-close-btn:hover {
-  background: rgba(30, 41, 59, 0.95);
+  background: rgba(15, 23, 42, 0.75);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.06);
 }
 
