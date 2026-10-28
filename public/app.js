@@ -1119,7 +1119,7 @@ function syncStyleControls() {
   if ($("#fBgOp")) $("#fBgOp").hidden = !st.background;
 
   // Sync alignment segmented control
-  $("#alignControl .seg-btn").forEach((btn) => {
+  $$("#alignControl .seg-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.align === (st.alignment || "center"));
   });
 }
@@ -1142,7 +1142,7 @@ $("#resetStyle").onclick = () => {
 };
 
 // Alignment segmented buttons
-$("#alignControl .seg-btn").forEach((btn) => {
+$$("#alignControl .seg-btn").forEach((btn) => {
   btn.onclick = () => {
     state.style.alignment = btn.dataset.align;
     syncStyleControls();
@@ -1152,9 +1152,9 @@ $("#alignControl .seg-btn").forEach((btn) => {
 });
 
 // Style preset chips
-$(".preset-chip").forEach((chip) => {
+$$(".preset-chip").forEach((chip) => {
   chip.onclick = () => {
-    $(".preset-chip").forEach((c) => c.classList.remove("active"));
+    $$(".preset-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
     const pName = chip.dataset.preset;
     if (PRESETS[pName]) {
