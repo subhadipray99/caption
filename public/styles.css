@@ -974,9 +974,10 @@ dialog.billing-dialog[open] {
   background: #ffffff;
   color: #090d16;
   box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.04);
-  max-width: 460px;
+  max-width: 480px;
   width: 92vw;
   margin: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -996,12 +997,49 @@ dialog.billing-dialog::backdrop {
   }
 }
 
+/* Modal Hero Banner */
+.billing-banner-wrap {
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  background: #0b1329;
+  border-bottom: 1px solid #1e293b;
+}
+.billing-banner-wrap svg.billing-banner-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.billing-banner-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+.billing-banner-close-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.06);
+}
+
 .billing-modal-content {
-  padding: 22px 24px 20px;
+  padding: 18px 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
 }
 
