@@ -43,7 +43,7 @@ CREATE POLICY "Allow public delete on projects" ON public.projects
 -- 5. User Credits Table (Video Minutes Balance)
 CREATE TABLE IF NOT EXISTS public.user_credits (
     user_id UUID PRIMARY KEY,
-    balance_seconds NUMERIC NOT NULL DEFAULT 600, -- 10 mins free starter credits
+    balance_seconds NUMERIC NOT NULL DEFAULT 60, -- 1 min (60s) free starter credits for first-time registered users
     total_purchased_seconds NUMERIC NOT NULL DEFAULT 0,
     total_used_seconds NUMERIC NOT NULL DEFAULT 0,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())

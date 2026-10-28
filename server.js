@@ -412,8 +412,8 @@ app.get("/api/billing/config", (req, res) => {
   res.json({
     keyId: process.env.RAZORPAY_KEY_ID || "",
     configured: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
-    inrRate: "₹10 = 20 Minutes",
-    minInr: 50,
+    inrRate: "₹10 = 5 Minutes",
+    minInr: 10,
     minUsd: 1,
   });
 });
@@ -488,17 +488,26 @@ app.post("/api/projects/:id/transcribe", async (req, res) => {
   const targetLang = req.body?.language || "auto";
   if (["extracting", "transcribing", "converting_hinglish", "converting_bengalish"].includes(p.status)) return res.json(p);
 
-  // Check user minutes balance
+  // Check user minutes/seconds balance
   const user = await getAuthUser(req);
+  if (!user && (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return res.status(401).json({
+      error: "Please sign in or create an account to transcribe (first-time registered users get 1 min free).",
+      code: "AUTH_REQUIRED",
+    });
+  }
+
   const durationSec = Math.max(1, Math.round(Number(req.body?.duration) || 60));
   if (user) {
     const { balanceSeconds } = await getUserBalance(user.id);
     if (balanceSeconds < durationSec) {
       return res.status(402).json({
-        error: "Insufficient minutes to transcribe this video.",
+        error: `Insufficient balance to transcribe this video (${durationSec}s required, ${balanceSeconds}s available).`,
         code: "INSUFFICIENT_MINUTES",
+        requiredSeconds: durationSec,
         requiredMinutes: Math.ceil(durationSec / 60),
         currentMinutes: Math.round((balanceSeconds / 60) * 10) / 10,
+        currentSeconds: balanceSeconds,
       });
     }
   }
@@ -527,6 +536,18 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
   await computePeaks(dir).catch((e) => console.warn("Waveform failed:", e.message));
   update(id, { status: "transcribing" });
 
+  // Compute exact audio duration of the audio request sent to Sarvam API
+  let audioDurationSec = Math.max(1, Math.round(Number(durationSec) || 60));
+  try {
+    const pkFile = path.join(dir, "peaks.json");
+    if (fs.existsSync(pkFile)) {
+      const pData = JSON.parse(fs.readFileSync(pkFile, "utf8"));
+      if (pData?.peaks?.length && pData.rate) {
+        audioDurationSec = Math.max(1, Math.round(pData.peaks.length / pData.rate));
+      }
+    }
+  } catch {}
+
   // For Hinglish or Bengalish, transcribe in native script first
   let sarvamLangCode = "unknown";
   if (targetLang === "hinglish" || targetLang === "hi-IN") {
@@ -550,6 +571,16 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
   const results = await job.getFileResults();
   if (!results.successful.length) {
     throw new Error(results.failed[0]?.error_message || "Sarvam could not transcribe this file.");
+  }
+
+  // Deduct balance on the basis of request sent to Sarvam API only (exact audio duration in seconds)
+  if (userId) {
+    try {
+      console.log(`Deducting ${audioDurationSec}s from user ${userId} for Sarvam transcription of project ${id}`);
+      await deductCredits(userId, audioDurationSec);
+    } catch (deductErr) {
+      console.warn("Failed to deduct user credits:", deductErr.message);
+    }
   }
 
   const outDir = path.join(dir, "stt");
@@ -640,14 +671,7 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
     }
   }
 
-  // Deduct user minutes upon successful transcription
-  if (userId && durationSec) {
-    try {
-      await deductCredits(userId, durationSec);
-    } catch (deductErr) {
-      console.warn("Failed to deduct user credits:", deductErr.message);
-    }
-  }
+
 
   let finalLanguage = result.language_code || null;
   if (targetLang === "hinglish") {

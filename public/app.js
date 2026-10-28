@@ -545,8 +545,16 @@ async function startTranscribe() {
     loadProjects();
     loadUserBalance();
   } catch (err) {
+    if (err.status === 401 || err.code === "AUTH_REQUIRED") {
+      toast("Please sign in or create an account (1 min free).");
+      setTimeout(() => {
+        window.location.href = "/account?mode=signup";
+      }, 1500);
+      return;
+    }
     if (err.status === 402 || err.code === "INSUFFICIENT_MINUTES") {
-      openBillingModal(err.data?.requiredMinutes);
+      const reqSec = err.data?.requiredSeconds || (err.data?.requiredMinutes ? err.data.requiredMinutes * 60 : durSec);
+      openBillingModal(reqSec);
       return;
     }
     toast(err.message || "Failed to start transcription");
@@ -1256,8 +1264,15 @@ window.addEventListener("beforeunload", () => { if (saveTimer) flushSave(); });
 
 // ---------------- billing & minute recharge (Razorpay) ----------------
 let currentCurrency = "INR";
-let selectedAmount = 50;
-let selectedMinutes = 100;
+let selectedAmount = 10;
+let selectedMinutes = 5;
+
+function formatBalanceDuration(totalSeconds) {
+  const sec = Math.max(0, Math.round(Number(totalSeconds) || 0));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
+}
 
 async function loadUserBalance() {
   try {
@@ -1267,13 +1282,22 @@ async function loadUserBalance() {
     const sidebarBalanceVal = $("#sidebarBalanceVal");
     const creditBtn = $("#creditBtn");
 
-    const mins = (data && data.loggedIn) ? Math.round(data.balanceMinutes) : 10;
-    const label = `${mins} mins`;
+    if (data && data.loggedIn) {
+      const totalSeconds = Math.max(0, Number(data.balanceSeconds) || 0);
+      const formatted = formatBalanceDuration(totalSeconds);
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
 
-    if (creditBalanceText) creditBalanceText.textContent = label;
-    if (modalBalanceVal) modalBalanceVal.textContent = mins;
-    if (sidebarBalanceVal) sidebarBalanceVal.textContent = mins;
-    if (creditBtn) creditBtn.title = `${mins} minutes available. Click to add more.`;
+      if (creditBalanceText) creditBalanceText.textContent = formatted;
+      if (modalBalanceVal) modalBalanceVal.textContent = formatted;
+      if (sidebarBalanceVal) sidebarBalanceVal.textContent = formatted;
+      if (creditBtn) creditBtn.title = `${m} min ${s} sec available. Click to recharge.`;
+    } else {
+      if (creditBalanceText) creditBalanceText.textContent = "1m Free";
+      if (modalBalanceVal) modalBalanceVal.textContent = "1m Free on signup";
+      if (sidebarBalanceVal) sidebarBalanceVal.textContent = "1m Free on signup";
+      if (creditBtn) creditBtn.title = "Register or sign in to get 1 min free captioning.";
+    }
   } catch (e) {
     console.warn("loadUserBalance error:", e);
   }
@@ -1307,10 +1331,10 @@ function selectCurrency(curr) {
     tabUsdBtn?.setAttribute("aria-selected", "false");
     if (panelInr) { panelInr.hidden = false; panelInr.classList.add("active"); }
     if (panelUsd) { panelUsd.hidden = true; panelUsd.classList.remove("active"); }
-    if (balanceRateTag) balanceRateTag.textContent = "₹0.50 / min";
+    if (balanceRateTag) balanceRateTag.textContent = "₹10 = 5 mins";
 
     if (!inrCustomAmount?.value) {
-      const card = $("#inrPackagesGrid .package-card");
+      const card = $("#inrPackagesGrid .package-card.selected") || $("#inrPackagesGrid .package-card");
       if (card) {
         $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
         card.classList.add("selected");
@@ -1325,10 +1349,10 @@ function selectCurrency(curr) {
     tabInrBtn?.setAttribute("aria-selected", "false");
     if (panelUsd) { panelUsd.hidden = false; panelUsd.classList.add("active"); }
     if (panelInr) { panelInr.hidden = true; panelInr.classList.remove("active"); }
-    if (balanceRateTag) balanceRateTag.textContent = "$1 / 120 mins";
+    if (balanceRateTag) balanceRateTag.textContent = "$1 = 30 mins";
 
     if (!usdCustomAmount?.value) {
-      const card = $("#usdPackagesGrid .package-card");
+      const card = $("#usdPackagesGrid .package-card.selected") || $("#usdPackagesGrid .package-card");
       if (card) {
         $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
         card.classList.add("selected");
@@ -1340,15 +1364,16 @@ function selectCurrency(curr) {
   updateBillingSummary();
 }
 
-function openBillingModal(requiredMins = null) {
+function openBillingModal(requiredSec = null) {
   const modal = $("#billingModal");
   if (!modal) {
     console.warn("billingModal not found in DOM");
     return;
   }
   loadUserBalance();
-  if (requiredMins) {
-    toast(`Video requires ~${requiredMins} minutes. Please top up your balance.`);
+  if (requiredSec) {
+    const formatted = formatBalanceDuration(requiredSec);
+    toast(`Video requires ~${formatted}. Please top up your balance.`);
   }
   if (typeof modal.showModal === "function") {
     try { modal.showModal(); } catch (e) { modal.setAttribute("open", ""); }
@@ -1390,7 +1415,7 @@ function initBilling() {
       $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
       card.classList.add("selected");
       if (inrCustomAmount) inrCustomAmount.value = "";
-      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹50 (100 mins)";
+      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹10 (5 mins)";
       selectedAmount = Number(card.dataset.amount);
       selectedMinutes = Number(card.dataset.minutes);
       updateBillingSummary();
@@ -1403,49 +1428,49 @@ function initBilling() {
       $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
       card.classList.add("selected");
       if (usdCustomAmount) usdCustomAmount.value = "";
-      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (120 mins)";
+      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (30 mins)";
       selectedAmount = Number(card.dataset.amount);
       selectedMinutes = Number(card.dataset.minutes);
       updateBillingSummary();
     };
   });
 
-  // Custom INR input
+  // Custom INR input (10 INR = 5 minutes -> val * 0.5)
   inrCustomAmount?.addEventListener("input", () => {
     const val = Number(inrCustomAmount.value);
     $$("#inrPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
-    if (val >= 50) {
-      const mins = Math.floor(val * 2);
+    if (val >= 10) {
+      const mins = Math.round(val * 0.5 * 10) / 10;
       selectedAmount = val;
       selectedMinutes = mins;
       if (inrCustomCalc) inrCustomCalc.innerHTML = `→ <strong>${mins.toLocaleString()}</strong> mins`;
       updateBillingSummary();
     } else if (val > 0) {
-      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹50 (100 mins)";
+      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹10 (5 mins)";
     } else {
-      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹50 (100 mins)";
+      if (inrCustomCalc) inrCustomCalc.textContent = "Min ₹10 (5 mins)";
     }
   });
 
-  // Custom USD input
+  // Custom USD input ($1 = 30 mins)
   usdCustomAmount?.addEventListener("input", () => {
     const val = Number(usdCustomAmount.value);
     $$("#usdPackagesGrid .package-card").forEach((c) => c.classList.remove("selected"));
     if (val >= 1) {
       let mins;
-      if (val === 1) mins = 120;
-      else if (val === 3) mins = 380;
-      else if (val === 5) mins = 700;
-      else if (val === 10) mins = 1500;
-      else mins = Math.floor(val * 130);
+      if (val === 1) mins = 30;
+      else if (val === 3) mins = 100;
+      else if (val === 5) mins = 180;
+      else if (val === 10) mins = 400;
+      else mins = Math.floor(val * 35);
       selectedAmount = val;
       selectedMinutes = mins;
       if (usdCustomCalc) usdCustomCalc.innerHTML = `→ <strong>${mins.toLocaleString()}</strong> mins`;
       updateBillingSummary();
     } else if (val > 0) {
-      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (120 mins)";
+      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (30 mins)";
     } else {
-      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (120 mins)";
+      if (usdCustomCalc) usdCustomCalc.textContent = "Min $1 (30 mins)";
     }
   });
 
@@ -1471,8 +1496,8 @@ function initBilling() {
           return;
         }
 
-        if (currentCurrency === "INR" && selectedAmount < 50) {
-          toast("Minimum recharge for INR is ₹50.");
+        if (currentCurrency === "INR" && selectedAmount < 10) {
+          toast("Minimum recharge for INR is ₹10.");
           return;
         }
         if (currentCurrency === "USD" && selectedAmount < 1) {

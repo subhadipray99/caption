@@ -51,11 +51,11 @@
 
     <div class="top-actions">
       <span class="export-status" id="exportStatus"></span>
-      <button class="btn btn-secondary btn-sm credit-pill" id="creditBtn" title="Minutes balance. Click to recharge.">
+      <button class="btn btn-secondary btn-sm credit-pill" id="creditBtn" title="Minutes & seconds balance. Click to recharge.">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none" style="color: #ffd60a; flex-shrink: 0;">
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
         </svg>
-        <span id="creditBalanceText">--m</span>
+        <span id="creditBalanceText">--m --s</span>
         <span class="credit-add-icon">+</span>
       </button>
       <button class="btn btn-secondary btn-sm" id="srtBtn" disabled title="Download SubRip subtitles (.srt)">
@@ -154,7 +154,7 @@
             <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none" style="color: #eab308; vertical-align: -1px;">
               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
-            Available: <strong id="sidebarBalanceVal">--</strong> mins
+            Available: <strong id="sidebarBalanceVal">--</strong>
           </span>
           <button type="button" class="btn-link-add" id="sidebarAddMinsBtn">+ Add</button>
         </div>
@@ -512,9 +512,9 @@
       <div class="balance-bar">
         <div class="balance-bar-left">
           <span class="balance-bar-dot"></span>
-          <span>Balance: <strong id="modalBalanceVal">--</strong> mins</span>
+          <span>Balance: <strong id="modalBalanceVal">--</strong></span>
         </div>
-        <span class="balance-rate-tag" id="balanceRateTag">₹0.50 / min</span>
+        <span class="balance-rate-tag" id="balanceRateTag">₹10 = 5 mins</span>
       </div>
 
       <!-- Currency Switcher Tabs -->
@@ -530,37 +530,37 @@
       <!-- INR Panel -->
       <div class="currency-panel active" id="panelInr" role="tabpanel">
         <div class="packages-grid" id="inrPackagesGrid">
-          <div class="package-card selected" data-currency="INR" data-amount="50" data-minutes="100">
+          <div class="package-card selected" data-currency="INR" data-amount="10" data-minutes="5">
             <div class="pkg-top">
-              <span class="pkg-mins">100</span>
+              <span class="pkg-mins">5</span>
+              <span class="pkg-unit">mins</span>
+            </div>
+            <div class="pkg-price">₹10</div>
+          </div>
+
+          <div class="package-card" data-currency="INR" data-amount="50" data-minutes="25">
+            <div class="pkg-top">
+              <span class="pkg-mins">25</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">₹50</div>
           </div>
 
-          <div class="package-card" data-currency="INR" data-amount="100" data-minutes="200">
+          <div class="package-card" data-currency="INR" data-amount="100" data-minutes="50">
             <span class="pkg-badge">Popular</span>
             <div class="pkg-top">
-              <span class="pkg-mins">200</span>
+              <span class="pkg-mins">50</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">₹100</div>
           </div>
 
-          <div class="package-card" data-currency="INR" data-amount="250" data-minutes="500">
+          <div class="package-card" data-currency="INR" data-amount="200" data-minutes="100">
             <div class="pkg-top">
-              <span class="pkg-mins">500</span>
+              <span class="pkg-mins">100</span>
               <span class="pkg-unit">mins</span>
             </div>
-            <div class="pkg-price">₹250</div>
-          </div>
-
-          <div class="package-card" data-currency="INR" data-amount="500" data-minutes="1000">
-            <div class="pkg-top">
-              <span class="pkg-mins">1,000</span>
-              <span class="pkg-unit">mins</span>
-            </div>
-            <div class="pkg-price">₹500</div>
+            <div class="pkg-price">₹200</div>
           </div>
         </div>
 
@@ -568,9 +568,9 @@
         <div class="custom-amount-row">
           <div class="custom-input-box">
             <span class="currency-prefix">₹</span>
-            <input type="number" id="inrCustomAmount" min="50" step="10" placeholder="Custom amount (min ₹50)" />
+            <input type="number" id="inrCustomAmount" min="10" step="5" placeholder="Custom amount (min ₹10)" />
           </div>
-          <div class="custom-calc-result" id="inrCustomCalc">Min ₹50 (100 mins)</div>
+          <div class="custom-calc-result" id="inrCustomCalc">Min ₹10 (5 mins)</div>
         </div>
       </div>
 
@@ -584,34 +584,34 @@
         </div>
 
         <div class="packages-grid" id="usdPackagesGrid">
-          <div class="package-card selected" data-currency="USD" data-amount="1" data-minutes="120">
+          <div class="package-card selected" data-currency="USD" data-amount="1" data-minutes="30">
             <div class="pkg-top">
-              <span class="pkg-mins">120</span>
+              <span class="pkg-mins">30</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">$1</div>
           </div>
 
-          <div class="package-card" data-currency="USD" data-amount="3" data-minutes="380">
+          <div class="package-card" data-currency="USD" data-amount="3" data-minutes="100">
             <span class="pkg-badge">Popular</span>
             <div class="pkg-top">
-              <span class="pkg-mins">380</span>
+              <span class="pkg-mins">100</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">$3</div>
           </div>
 
-          <div class="package-card" data-currency="USD" data-amount="5" data-minutes="700">
+          <div class="package-card" data-currency="USD" data-amount="5" data-minutes="180">
             <div class="pkg-top">
-              <span class="pkg-mins">700</span>
+              <span class="pkg-mins">180</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">$5</div>
           </div>
 
-          <div class="package-card" data-currency="USD" data-amount="10" data-minutes="1500">
+          <div class="package-card" data-currency="USD" data-amount="10" data-minutes="400">
             <div class="pkg-top">
-              <span class="pkg-mins">1,500</span>
+              <span class="pkg-mins">400</span>
               <span class="pkg-unit">mins</span>
             </div>
             <div class="pkg-price">$10</div>
@@ -624,7 +624,7 @@
             <span class="currency-prefix">$</span>
             <input type="number" id="usdCustomAmount" min="1" step="1" placeholder="Custom amount (min $1)" />
           </div>
-          <div class="custom-calc-result" id="usdCustomCalc">Min $1 (120 mins)</div>
+          <div class="custom-calc-result" id="usdCustomCalc">Min $1 (30 mins)</div>
         </div>
       </div>
 
