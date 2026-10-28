@@ -1451,6 +1451,8 @@ payNowBtn?.addEventListener("click", async () => {
       },
       modal: {
         ondismiss: function () {
+          // Re-open billing modal so user can retry or adjust pack
+          openBillingModal();
           payNowBtn.disabled = false;
           payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
         },
@@ -1489,8 +1491,8 @@ payNowBtn?.addEventListener("click", async () => {
       options.config = {
         display: {
           blocks: {
-            wallets: {
-              name: "PayPal Wallet",
+            paypal_block: {
+              name: "Pay via PayPal",
               instruments: [
                 {
                   method: "wallet",
@@ -1499,28 +1501,25 @@ payNowBtn?.addEventListener("click", async () => {
               ],
             },
           },
-          sequence: ["block.wallets"],
+          sequence: ["block.paypal_block"],
           preferences: {
             show_default_blocks: false,
           },
         },
       };
-      options.method = {
-        wallet: true,
-        card: false,
-        netbanking: false,
-        upi: false,
-        paylater: false,
-        emi: false,
-      };
+      // Note: Do not pass options.method along with config.display to prevent checkout.js conflicts
     }
+
+    // Close the billing modal before opening Razorpay checkout so it doesn't block pointer events
+    closeBillingModal();
+    payNowBtn.disabled = false;
+    payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
 
     const rzpInstance = new window.Razorpay(options);
     rzpInstance.on("payment.failed", function (resp) {
       console.error("Razorpay payment failed:", resp.error);
       toast("Payment failed: " + (resp.error.description || resp.error.reason));
-      payNowBtn.disabled = false;
-      payNowBtn.innerHTML = `<span>Recharge Now</span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+      openBillingModal();
     });
 
     rzpInstance.open();

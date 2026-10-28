@@ -916,7 +916,8 @@ input[type=color] {
 }
 
 /* Dialog & Backdrop (Modern Web Guidance compliant) */
-dialog.billing-dialog:modal {
+dialog.billing-dialog:modal,
+dialog.billing-dialog[open] {
   border: none;
   padding: 0;
   border-radius: 18px;
