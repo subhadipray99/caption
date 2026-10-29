@@ -548,6 +548,19 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
     }
   } catch {}
 
+  // ================= SECURITY LAYER =================
+  // Strict check of actual physical audio duration against user balance BEFORE creating Sarvam job
+  if (userId) {
+    const { balanceSeconds } = await getUserBalance(userId);
+    if (balanceSeconds < audioDurationSec) {
+      console.warn(`[Security Gate] Blocked Sarvam STT: user ${userId} has ${balanceSeconds}s balance, but audio requires ${audioDurationSec}s.`);
+      throw new Error(`Insufficient balance: This video requires ${audioDurationSec}s (${Math.ceil(audioDurationSec / 60)} min), but your balance is ${balanceSeconds}s (${Math.round((balanceSeconds / 60) * 10) / 10} min). Please top up your balance.`);
+    }
+  } else if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Authentication required: Please sign in or create an account to transcribe.");
+  }
+  // ===================================================
+
   // For Hinglish or Bengalish, transcribe in native script first
   let sarvamLangCode = "unknown";
   if (targetLang === "hinglish" || targetLang === "hi-IN") {

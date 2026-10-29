@@ -461,13 +461,27 @@ function applyStatus(p) {
     busy.querySelector(".spinner").hidden = true;
     $("#busyText").innerHTML = "";
     const msg = document.createElement("div");
-    msg.textContent = "Transcription failed: " + (p.error || "unknown error");
-    const btn = document.createElement("button");
-    btn.className = "btn primary small";
-    btn.style.marginTop = "10px";
-    btn.textContent = "Retry";
-    btn.onclick = retranscribe;
-    $("#busyText").append(msg, btn);
+    msg.textContent = p.error || "Transcription failed";
+    
+    if (p.error && p.error.includes("Insufficient balance")) {
+      const topUpBtn = document.createElement("button");
+      topUpBtn.className = "btn btn-primary btn-sm";
+      topUpBtn.style.marginTop = "10px";
+      topUpBtn.textContent = "Top Up Balance";
+      topUpBtn.onclick = () => {
+        busy.hidden = true;
+        openBillingModal();
+      };
+      $("#busyText").append(msg, topUpBtn);
+      openBillingModal();
+    } else {
+      const btn = document.createElement("button");
+      btn.className = "btn primary small";
+      btn.style.marginTop = "10px";
+      btn.textContent = "Retry";
+      btn.onclick = retranscribe;
+      $("#busyText").append(msg, btn);
+    }
   } else {
     busy.hidden = true;
   }
