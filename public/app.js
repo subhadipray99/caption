@@ -26,6 +26,13 @@ const DEFAULT_STYLE = {
   alignment: "center",
 };
 
+const DEFAULT_CROP = {
+  aspect: "original", // "original" | "9:16" | "1:1" | "4:5" | "16:9"
+  panX: 50,           // 0 to 100 (% horizontal position)
+  panY: 50,           // 0 to 100 (% vertical position)
+  scale: 100,         // 100 to 250 (% zoom)
+};
+
 const PRESETS = {
   hormozi: {
     font: "Anton",
@@ -138,6 +145,7 @@ const state = {
   current: null, // project metadata
   captions: [],
   style: { ...DEFAULT_STYLE },
+  crop: { ...DEFAULT_CROP },
   selectedId: null,
   pps: 100, // timeline pixels per second
   peaks: null,
@@ -216,7 +224,7 @@ async function flushSave() {
   try {
     await api(`/api/projects/${state.current.id}`, {
       method: "PUT",
-      body: JSON.stringify({ captions: state.captions, style: state.style }),
+      body: JSON.stringify({ captions: state.captions, style: state.style, crop: state.crop }),
     });
   } catch (e) { toast("Save failed: " + e.message); }
 }
@@ -377,6 +385,7 @@ async function openProject(id) {
   state.current = p;
   state.captions = p.captions || [];
   state.style = { ...DEFAULT_STYLE, ...(p.style || {}) };
+  state.crop = { ...DEFAULT_CROP, ...(p.crop || {}) };
   state.selectedId = null;
   state.undo = [];
   state.peaks = null;
@@ -389,6 +398,7 @@ async function openProject(id) {
   b.textContent = p.name;
   $("#projectTitle").appendChild(b);
   syncStyleControls();
+  syncCropControls();
   applyStatus(p);
   loadPeaks();
   renderFiles();
@@ -397,6 +407,9 @@ async function openProject(id) {
 function closeProject() {
   state.current = null;
   state.captions = [];
+  state.crop = { ...DEFAULT_CROP };
+  syncCropControls();
+  updateCropDisplay();
   video.removeAttribute("src");
   video.load();
   player.hidden = true;
@@ -667,6 +680,7 @@ function layoutPlayer() {
   if (h > H) { h = H; w = H * ar; }
   player.style.width = w + "px";
   player.style.height = h + "px";
+  updateCropDisplay();
   renderOverlay(true);
 }
 new ResizeObserver(() => { layoutPlayer(); renderTimeline(); }).observe($("#stage"));
@@ -705,7 +719,10 @@ function renderOverlay(force = false) {
   overlayKey = key;
 
   const s = player.clientHeight / video.videoHeight; // display scale
-  const unit = (Math.min(video.videoWidth, video.videoHeight) / 1080) * s;
+  const crop = getCropCoordinates();
+  const refW = crop.active ? crop.width : video.videoWidth;
+  const refH = crop.active ? crop.height : video.videoHeight;
+  const unit = (Math.min(refW, refH) / 1080) * s;
   const fontPx = st.size * unit;
   const fs = fontScale(st.font);
   const letterSpacePx = (st.letterSpacing || 0) * unit;
@@ -1221,6 +1238,313 @@ $$(".preset-chip").forEach((chip) => {
   };
 });
 
+// ---------------- video crop tool ----------------
+function getCropCoordinates() {
+  if (!video.videoWidth || !video.videoHeight) {
+    return { x: 0, y: 0, width: 0, height: 0, aspect: "original", active: false };
+  }
+  const W_vid = video.videoWidth;
+  const H_vid = video.videoHeight;
+  const c = state.crop || DEFAULT_CROP;
+  const aspect = c.aspect || "original";
+
+  if (aspect === "original" && (c.scale || 100) <= 100) {
+    return {
+      x: 0,
+      y: 0,
+      width: W_vid,
+      height: H_vid,
+      aspect: "original",
+      active: false,
+    };
+  }
+
+  let targetRatio;
+  if (aspect === "9:16") targetRatio = 9 / 16;
+  else if (aspect === "1:1") targetRatio = 1 / 1;
+  else if (aspect === "4:5") targetRatio = 4 / 5;
+  else if (aspect === "16:9") targetRatio = 16 / 9;
+  else targetRatio = W_vid / H_vid;
+
+  // Max rectangle that fits inside source video with targetRatio
+  let maxW, maxH;
+  const vidRatio = W_vid / H_vid;
+  if (vidRatio > targetRatio) {
+    maxH = H_vid;
+    maxW = H_vid * targetRatio;
+  } else {
+    maxW = W_vid;
+    maxH = W_vid / targetRatio;
+  }
+
+  const zoom = Math.max(1, (c.scale || 100) / 100);
+  let cropW = maxW / zoom;
+  let cropH = maxH / zoom;
+
+  // Even integers for video codecs
+  cropW = Math.max(2, Math.floor(cropW / 2) * 2);
+  cropH = Math.max(2, Math.floor(cropH / 2) * 2);
+
+  cropW = Math.min(W_vid, cropW);
+  cropH = Math.min(H_vid, cropH);
+
+  const deltaX = Math.max(0, W_vid - cropW);
+  const deltaY = Math.max(0, H_vid - cropH);
+
+  const panX = typeof c.panX === "number" ? Math.max(0, Math.min(100, c.panX)) : 50;
+  const panY = typeof c.panY === "number" ? Math.max(0, Math.min(100, c.panY)) : 50;
+
+  let cropX = Math.round((panX / 100) * deltaX);
+  let cropY = Math.round((panY / 100) * deltaY);
+
+  cropX = Math.max(0, Math.min(W_vid - cropW, Math.floor(cropX / 2) * 2));
+  cropY = Math.max(0, Math.min(H_vid - cropH, Math.floor(cropY / 2) * 2));
+
+  return {
+    x: cropX,
+    y: cropY,
+    width: cropW,
+    height: cropH,
+    aspect,
+    active: true,
+  };
+}
+
+function updateCropDisplay() {
+  const overlay = $("#cropOverlay");
+  const frame = $("#cropFrame");
+  const badge = $("#cropBadge");
+  const captionLayer = $("#captionLayer");
+  if (!overlay || !frame || !video.videoWidth) return;
+
+  const crop = getCropCoordinates();
+  const isCropTab = $(".tab.active")?.dataset.tab === "crop";
+
+  if (!crop.active) {
+    if (isCropTab) {
+      overlay.hidden = false;
+      overlay.classList.add("interactive");
+      frame.style.left = "0px";
+      frame.style.top = "0px";
+      frame.style.width = player.clientWidth + "px";
+      frame.style.height = player.clientHeight + "px";
+      if (badge) badge.textContent = `Original (${video.videoWidth}×${video.videoHeight})`;
+    } else {
+      overlay.hidden = true;
+    }
+    if (captionLayer) {
+      captionLayer.style.left = "0px";
+      captionLayer.style.top = "0px";
+      captionLayer.style.width = "100%";
+      captionLayer.style.height = "100%";
+    }
+    updateCropSidebarLabels(crop);
+    return;
+  }
+
+  overlay.hidden = false;
+  if (isCropTab) {
+    overlay.classList.add("interactive");
+  } else {
+    overlay.classList.remove("interactive");
+  }
+
+  const s = player.clientWidth / video.videoWidth;
+  const fLeft = Math.round(crop.x * s);
+  const fTop = Math.round(crop.y * s);
+  const fWidth = Math.round(crop.width * s);
+  const fHeight = Math.round(crop.height * s);
+
+  frame.style.left = fLeft + "px";
+  frame.style.top = fTop + "px";
+  frame.style.width = fWidth + "px";
+  frame.style.height = fHeight + "px";
+
+  if (badge) {
+    const aspectLabels = {
+      "9:16": "9:16",
+      "1:1": "1:1",
+      "4:5": "4:5",
+      "16:9": "16:9",
+      original: "Original",
+    };
+    badge.textContent = `${aspectLabels[crop.aspect] || crop.aspect} · ${crop.width}×${crop.height}`;
+  }
+
+  if (captionLayer) {
+    captionLayer.style.left = fLeft + "px";
+    captionLayer.style.top = fTop + "px";
+    captionLayer.style.width = fWidth + "px";
+    captionLayer.style.height = fHeight + "px";
+  }
+
+  updateCropSidebarLabels(crop);
+}
+
+function updateCropSidebarLabels(crop) {
+  const oPanX = $("#oCropPanX");
+  const oPanY = $("#oCropPanY");
+  const oScale = $("#oCropScale");
+  const sPanX = $("#sCropPanX");
+  const sPanY = $("#sCropPanY");
+  const sScale = $("#sCropScale");
+  const resLabel = $("#cropResLabel");
+  const areaLabel = $("#cropAreaLabel");
+
+  const c = state.crop || DEFAULT_CROP;
+  if (oPanX) oPanX.textContent = Math.round(c.panX) + "%";
+  if (oPanY) oPanY.textContent = Math.round(c.panY) + "%";
+  if (oScale) oScale.textContent = Math.round(c.scale) + "%";
+  if (sPanX && document.activeElement !== sPanX) sPanX.value = c.panX;
+  if (sPanY && document.activeElement !== sPanY) sPanY.value = c.panY;
+  if (sScale && document.activeElement !== sScale) sScale.value = c.scale;
+
+  if (resLabel) {
+    if (crop && crop.width && crop.height) {
+      resLabel.textContent = `${crop.width} × ${crop.height} (${crop.aspect})`;
+    } else if (video.videoWidth) {
+      resLabel.textContent = `${video.videoWidth} × ${video.videoHeight} (Original)`;
+    } else {
+      resLabel.textContent = "--";
+    }
+  }
+
+  if (areaLabel && video.videoWidth && video.videoHeight) {
+    if (crop && crop.active) {
+      const totalPixels = video.videoWidth * video.videoHeight;
+      const cropPixels = crop.width * crop.height;
+      const pct = Math.round((cropPixels / totalPixels) * 100);
+      areaLabel.textContent = `${pct}% of source frame`;
+    } else {
+      areaLabel.textContent = "100% (Full source frame)";
+    }
+  }
+}
+
+function syncCropControls() {
+  const c = state.crop || DEFAULT_CROP;
+  $$(".crop-preset-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.aspect === c.aspect);
+  });
+  updateCropSidebarLabels(getCropCoordinates());
+}
+
+function initCrop() {
+  const frame = $("#cropFrame");
+  if (!frame) return;
+
+  // Preset buttons
+  $$(".crop-preset-btn").forEach((btn) => {
+    btn.onclick = () => {
+      const aspect = btn.dataset.aspect;
+      state.crop.aspect = aspect;
+      if (aspect === "original") {
+        state.crop.panX = 50;
+        state.crop.panY = 50;
+        state.crop.scale = 100;
+      }
+      syncCropControls();
+      updateCropDisplay();
+      renderOverlay(true);
+      if (state.current) scheduleSave();
+    };
+  });
+
+  // Range sliders
+  $("#sCropPanX")?.addEventListener("input", (e) => {
+    state.crop.panX = parseFloat(e.target.value);
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+  $("#sCropPanY")?.addEventListener("input", (e) => {
+    state.crop.panY = parseFloat(e.target.value);
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+  $("#sCropScale")?.addEventListener("input", (e) => {
+    state.crop.scale = parseFloat(e.target.value);
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+
+  // Center & Reset buttons
+  $("#btnCenterCrop")?.addEventListener("click", () => {
+    state.crop.panX = 50;
+    state.crop.panY = 50;
+    syncCropControls();
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+  $("#btnResetCrop")?.addEventListener("click", () => {
+    state.crop = { ...DEFAULT_CROP };
+    syncCropControls();
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+
+  // Draggable crop frame on player
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let startPanX = 50, startPanY = 50;
+
+  frame.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const crop = getCropCoordinates();
+    if (!crop.active && state.crop.aspect === "original") return;
+
+    dragging = true;
+    frame.classList.add("active");
+    frame.setPointerCapture(e.pointerId);
+    startX = e.clientX;
+    startY = e.clientY;
+    startPanX = state.crop.panX;
+    startPanY = state.crop.panY;
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  frame.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const crop = getCropCoordinates();
+    const W_vid = video.videoWidth;
+    const H_vid = video.videoHeight;
+    const deltaX = W_vid - crop.width;
+    const deltaY = H_vid - crop.height;
+    const s = player.clientWidth / W_vid;
+
+    const dx = (e.clientX - startX) / s;
+    const dy = (e.clientY - startY) / s;
+
+    if (deltaX > 0) {
+      const nextPanX = Math.max(0, Math.min(100, startPanX + (dx / deltaX) * 100));
+      state.crop.panX = Math.round(nextPanX * 10) / 10;
+    }
+    if (deltaY > 0) {
+      const nextPanY = Math.max(0, Math.min(100, startPanY + (dy / deltaY) * 100));
+      state.crop.panY = Math.round(nextPanY * 10) / 10;
+    }
+
+    updateCropDisplay();
+    renderOverlay(true);
+    if (state.current) scheduleSave();
+  });
+
+  const stopDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    frame.classList.remove("active");
+    try { frame.releasePointerCapture(e.pointerId); } catch {}
+  };
+
+  frame.addEventListener("pointerup", stopDrag);
+  frame.addEventListener("pointercancel", stopDrag);
+}
+
 // ---------------- mobile navigation ----------------
 $$("#mobileBottomNav .m-nav-btn").forEach((btn) => {
   btn.onclick = () => {
@@ -1235,6 +1559,7 @@ $$("#mobileBottomNav .m-nav-btn").forEach((btn) => {
       $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === view));
       $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === view));
     }
+    updateCropDisplay();
   };
 });
 
@@ -1243,6 +1568,7 @@ $$(".tab").forEach((t) => (t.onclick = () => {
   $$(".tab").forEach((x) => x.classList.toggle("active", x === t));
   $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === t.dataset.tab));
   if (t.dataset.tab === "captions") requestAnimationFrame(() => $$("#captionList textarea").forEach(autosize));
+  updateCropDisplay();
 }));
 
 // ---------------- export ----------------
@@ -1250,10 +1576,17 @@ $("#exportBtn").onclick = async () => {
   if (!state.current || !video.videoWidth) return;
   await flushSave();
   const style = { ...state.style, fontScale: fontScale(state.style.font) };
+  const crop = getCropCoordinates();
   try {
     const p = await api(`/api/projects/${state.current.id}/export`, {
       method: "POST",
-      body: JSON.stringify({ width: video.videoWidth, height: video.videoHeight, duration: duration(), style }),
+      body: JSON.stringify({
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: duration(),
+        style,
+        crop: crop.active ? crop : null
+      }),
     });
     applyStatus(p);
     loadProjects();
@@ -1637,6 +1970,8 @@ function initBilling() {
 
 // ---------------- boot ----------------
 syncStyleControls();
+syncCropControls();
+initCrop();
 initBilling();
 loadUserBalance();
 loadProjects().then(() => { if (state.projects[0]) openProject(state.projects[0].id); });

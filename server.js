@@ -377,6 +377,7 @@ app.put("/api/projects/:id", (req, res) => {
   const patch = {};
   if (Array.isArray(req.body.captions) && !transcribing) patch.captions = req.body.captions;
   if (req.body.style) patch.style = req.body.style;
+  if (req.body.crop) patch.crop = req.body.crop;
   res.json(update(req.params.id, patch));
 });
 
@@ -802,14 +803,39 @@ app.post("/api/projects/:id/retry-bengalish", async (req, res) => {
 app.post("/api/projects/:id/export", (req, res) => {
   const p = load(req.params.id);
   if (p.status === "exporting") return res.json(p);
-  const { width, height, duration, style } = req.body;
+  const { width, height, duration, style, crop } = req.body;
   if (!width || !height) return res.status(400).json({ error: "Missing video dimensions." });
-  res.json(update(p.id, { status: "exporting", progress: 0, error: null, style: style || p.style }));
+  res.json(update(p.id, {
+    status: "exporting",
+    progress: 0,
+    error: null,
+    style: style || p.style,
+    crop: crop || p.crop
+  }));
 
   (async () => {
     const dir = projDir(p.id);
     const fresh = load(p.id);
-    fs.writeFileSync(path.join(dir, "captions.ass"), buildAss(fresh.captions, fresh.style, width, height));
+
+    let cropFilter = null;
+    let assWidth = width;
+    let assHeight = height;
+
+    const cropData = crop || fresh.crop;
+    if (cropData && cropData.width && cropData.height) {
+      let cropW = Math.floor(cropData.width / 2) * 2;
+      let cropH = Math.floor(cropData.height / 2) * 2;
+      let cropX = Math.max(0, Math.min(width - cropW, Math.floor((cropData.x || 0) / 2) * 2));
+      let cropY = Math.max(0, Math.min(height - cropH, Math.floor((cropData.y || 0) / 2) * 2));
+
+      if (cropW > 0 && cropH > 0 && cropW <= width && cropH <= height && (cropW < width || cropH < height || cropX > 0 || cropY > 0)) {
+        cropFilter = `crop=${cropW}:${cropH}:${cropX}:${cropY}`;
+        assWidth = cropW;
+        assHeight = cropH;
+      }
+    }
+
+    fs.writeFileSync(path.join(dir, "captions.ass"), buildAss(fresh.captions, fresh.style, assWidth, assHeight));
     const out = "captioned.mp4";
 
     const fontsDir = path.resolve(__dirname, "fonts");
@@ -823,8 +849,14 @@ app.post("/api/projects/:id/export", (req, res) => {
     // Relative path to fonts directory from projects/<id> directory
     const relFontsDir = path.relative(dir, fontsDir).replace(/\\/g, "/");
 
+    const vfFilters = [];
+    if (cropFilter) {
+      vfFilters.push(cropFilter);
+    }
+    vfFilters.push(`ass=filename=captions.ass:fontsdir=${relFontsDir}`);
+
     await runFfmpeg(
-      ["-i", fresh.video, "-vf", `ass=filename=captions.ass:fontsdir=${relFontsDir}`, "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+      ["-i", fresh.video, "-vf", vfFilters.join(","), "-c:v", "libx264", "-preset", "medium", "-crf", "18",
        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out],
       { cwd: dir, duration, onProgress: (progress) => update(p.id, { progress }) }
     );
