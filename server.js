@@ -100,6 +100,83 @@ async function syncToSupabase(p) {
   if (error) console.warn("Supabase upsert failed:", error.message);
 }
 
+// Ensure video file is downloaded locally onto disk before FFmpeg operations
+async function ensureLocalVideo(p) {
+  const dir = projDir(p.id);
+  fs.mkdirSync(dir, { recursive: true });
+  const filename = p.video || "source.mp4";
+  const localPath = path.join(dir, filename);
+
+  // 1. If file already exists and is non-empty, use it directly
+  if (fs.existsSync(localPath)) {
+    try {
+      const st = fs.statSync(localPath);
+      if (st.size > 0) return localPath;
+    } catch {}
+  }
+
+  // 2. Fetch missing cloud storage keys from Supabase if needed
+  if ((!p.videoR2Key || !p.videoUrl) && process.env.SUPABASE_URL) {
+    try {
+      const { data: sp } = await supabase.from("projects").select("*").eq("id", p.id).maybeSingle();
+      if (sp) {
+        if (!p.videoR2Key && sp.video_storage_path) p.videoR2Key = sp.video_storage_path;
+        if (!p.videoUrl && sp.video_url) p.videoUrl = sp.video_url;
+        if (sp.video_storage_path && !p.video) p.video = path.basename(sp.video_storage_path);
+      }
+    } catch (dbErr) {
+      console.warn("Could not query Supabase for video storage path:", dbErr.message);
+    }
+  }
+
+  // 3. Download from Cloudflare R2 if key is known
+  if (p.videoR2Key && r2Configured) {
+    try {
+      console.log(`Downloading video from R2 (${p.videoR2Key}) to ${localPath}...`);
+      await downloadFileFromR2(p.videoR2Key.trim(), localPath);
+      if (fs.existsSync(localPath) && fs.statSync(localPath).size > 0) {
+        return localPath;
+      }
+    } catch (r2Err) {
+      console.warn(`Failed to download from R2 (${p.videoR2Key}):`, r2Err.message);
+    }
+  }
+
+  // 4. Download from videoUrl if available
+  if (p.videoUrl) {
+    try {
+      console.log(`Downloading video from videoUrl (${p.videoUrl}) to ${localPath}...`);
+      const resp = await fetch(p.videoUrl);
+      if (resp.ok) {
+        const fileStream = fs.createWriteStream(localPath);
+        const { pipeline } = require("stream/promises");
+        const { Readable } = require("stream");
+        await pipeline(Readable.fromWeb(resp.body), fileStream);
+        if (fs.existsSync(localPath) && fs.statSync(localPath).size > 0) {
+          return localPath;
+        }
+      }
+    } catch (urlErr) {
+      console.warn(`Failed to download from videoUrl (${p.videoUrl}):`, urlErr.message);
+    }
+  }
+
+  // 5. Look for any existing video in the project directory
+  try {
+    const files = fs.readdirSync(dir);
+    const anyVideo = files.find((f) => f.match(/\.(mp4|mov|webm|mkv|avi)$/i) && f !== "captioned.mp4");
+    if (anyVideo) {
+      const foundPath = path.join(dir, anyVideo);
+      if (fs.statSync(foundPath).size > 0) {
+        p.video = anyVideo;
+        return foundPath;
+      }
+    }
+  } catch {}
+
+  throw new Error(`Video file ${filename} not found on server or cloud storage`);
+}
+
 function runFfmpeg(args, { cwd, duration, onProgress } = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(ffmpegPath, ["-hide_banner", "-y", ...args], { cwd });
@@ -357,8 +434,12 @@ app.get("/api/projects/:id", async (req, res) => {
 app.get("/api/projects/:id/video", async (req, res) => {
   const p = fs.existsSync(projFile(req.params.id)) ? load(req.params.id) : null;
   if (p && p.videoUrl) return res.redirect(p.videoUrl);
-  const localVid = path.join(projDir(req.params.id), p?.video || "source.mp4");
-  if (fs.existsSync(localVid)) return res.sendFile(localVid);
+  try {
+    if (p) {
+      const localVid = await ensureLocalVideo(p);
+      return res.sendFile(localVid);
+    }
+  } catch {}
   res.status(404).json({ error: "Video not found" });
 });
 
@@ -524,13 +605,10 @@ async function transcribe(id, targetLang = "auto", userId = null, durationSec = 
   const dir = projDir(id);
   const p = load(id);
   const audio = path.join(dir, "audio.mp3");
-  const localVideoPath = path.join(dir, p.video);
 
-  // If local video doesn't exist on disk (due to ephemeral restart), download it from R2
-  if (!fs.existsSync(localVideoPath) && p.videoR2Key && r2Configured) {
-    fs.mkdirSync(dir, { recursive: true });
-    await downloadFileFromR2(p.videoR2Key, localVideoPath);
-  }
+  // Ensure local video exists on disk (handles ephemeral Render restart)
+  const localVideoPath = await ensureLocalVideo(p);
+  p.video = path.basename(localVideoPath);
 
   // 16 kHz mono speech audio is all the model needs and keeps uploads small.
   await runFfmpeg(["-i", p.video, "-vn", "-ac", "1", "-ar", "16000", "-b:a", "64k", "audio.mp3"], { cwd: dir });
@@ -816,6 +894,10 @@ app.post("/api/projects/:id/export", (req, res) => {
   (async () => {
     const dir = projDir(p.id);
     const fresh = load(p.id);
+
+    // Ensure video file is downloaded locally before running FFmpeg (handles ephemeral Render restarts)
+    const localVideoFile = await ensureLocalVideo(fresh);
+    fresh.video = path.basename(localVideoFile);
 
     let cropFilter = null;
     let assWidth = width;
