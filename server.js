@@ -811,8 +811,20 @@ app.post("/api/projects/:id/export", (req, res) => {
     const fresh = load(p.id);
     fs.writeFileSync(path.join(dir, "captions.ass"), buildAss(fresh.captions, fresh.style, width, height));
     const out = "captioned.mp4";
+
+    const fontsDir = path.resolve(__dirname, "fonts");
+    const fontconfigDir = path.resolve(__dirname, "fontconfig");
+    const fontconfigFile = path.join(fontconfigDir, "fonts.conf");
+
+    // Configure Fontconfig for Linux / Render
+    process.env.FONTCONFIG_PATH = fontconfigDir;
+    process.env.FONTCONFIG_FILE = fontconfigFile;
+
+    // Relative path to fonts directory from projects/<id> directory
+    const relFontsDir = path.relative(dir, fontsDir).replace(/\\/g, "/");
+
     await runFfmpeg(
-      ["-i", fresh.video, "-vf", "ass=captions.ass", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+      ["-i", fresh.video, "-vf", `ass=filename=captions.ass:fontsdir=${relFontsDir}`, "-c:v", "libx264", "-preset", "medium", "-crf", "18",
        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out],
       { cwd: dir, duration, onProgress: (progress) => update(p.id, { progress }) }
     );
