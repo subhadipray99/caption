@@ -61,6 +61,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const projDir = (id) => path.join(PROJECTS_DIR, id);
 const projFile = (id) => path.join(projDir(id), "project.json");
 const validId = (id) => /^[a-f0-9]{16}$/.test(id) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+const activeExports = new Set();
 
 function load(id) {
   return JSON.parse(fs.readFileSync(projFile(id), "utf8"));
@@ -398,14 +399,14 @@ app.param("id", (req, res, next, id) => {
 
 app.get("/api/projects/:id", async (req, res) => {
   const id = req.params.id;
+  let p = null;
   if (fs.existsSync(projFile(id))) {
-    return res.json(load(id));
-  }
-  // Fallback: Restore project metadata from Supabase
-  if (process.env.SUPABASE_URL) {
+    p = load(id);
+  } else if (process.env.SUPABASE_URL) {
+    // Fallback: Restore project metadata from Supabase
     const { data: sp } = await supabase.from("projects").select("*").eq("id", id).maybeSingle();
     if (sp) {
-      const p = {
+      p = {
         id: sp.id,
         name: sp.name,
         video: path.basename(sp.video_storage_path || "source.mp4"),
@@ -425,10 +426,28 @@ app.get("/api/projects/:id", async (req, res) => {
       };
       fs.mkdirSync(projDir(id), { recursive: true });
       fs.writeFileSync(projFile(id), JSON.stringify(p, null, 2));
-      return res.json(p);
     }
   }
-  res.status(404).json({ error: "Not found" });
+
+  if (!p) return res.status(404).json({ error: "Not found" });
+
+  // Auto-heal stranded export state (e.g. server restarted while exporting)
+  if (p.status === "exporting" && !activeExports.has(p.id)) {
+    console.log(`Auto-healing stranded export state for project ${p.id}`);
+    p = update(p.id, {
+      status: "ready",
+      error: p.error || "Previous export was interrupted by server restart. Please export again."
+    });
+  }
+
+  return res.json(p);
+});
+
+app.post("/api/projects/:id/reset-status", (req, res) => {
+  const id = req.params.id;
+  activeExports.delete(id);
+  const p = update(id, { status: "ready", progress: 0, error: null });
+  res.json(p);
 });
 
 app.get("/api/projects/:id/video", async (req, res) => {
@@ -880,9 +899,13 @@ app.post("/api/projects/:id/retry-bengalish", async (req, res) => {
 // ---------- export (burn captions into video) ----------
 app.post("/api/projects/:id/export", (req, res) => {
   const p = load(req.params.id);
-  if (p.status === "exporting") return res.json(p);
-  const { width, height, duration, style, crop } = req.body;
+  const { width, height, duration, style, crop, force } = req.body;
   if (!width || !height) return res.status(400).json({ error: "Missing video dimensions." });
+
+  // Only skip if an export is actively running in this process and not forced
+  if (activeExports.has(p.id) && !force) return res.json(p);
+
+  activeExports.add(p.id);
   res.json(update(p.id, {
     status: "exporting",
     progress: 0,
@@ -892,81 +915,85 @@ app.post("/api/projects/:id/export", (req, res) => {
   }));
 
   (async () => {
-    const dir = projDir(p.id);
-    const fresh = load(p.id);
+    try {
+      const dir = projDir(p.id);
+      const fresh = load(p.id);
 
-    // Ensure video file is downloaded locally before running FFmpeg (handles ephemeral Render restarts)
-    const localVideoFile = await ensureLocalVideo(fresh);
-    fresh.video = path.basename(localVideoFile);
+      // Ensure video file is downloaded locally before running FFmpeg (handles ephemeral Render restarts)
+      const localVideoFile = await ensureLocalVideo(fresh);
+      fresh.video = path.basename(localVideoFile);
 
-    let cropFilter = null;
-    let assWidth = width;
-    let assHeight = height;
+      let cropFilter = null;
+      let assWidth = width;
+      let assHeight = height;
 
-    const cropData = crop || fresh.crop;
-    if (cropData && cropData.width && cropData.height) {
-      let cropW = Math.floor(cropData.width / 2) * 2;
-      let cropH = Math.floor(cropData.height / 2) * 2;
-      let cropX = Math.max(0, Math.min(width - cropW, Math.floor((cropData.x || 0) / 2) * 2));
-      let cropY = Math.max(0, Math.min(height - cropH, Math.floor((cropData.y || 0) / 2) * 2));
+      const cropData = crop || fresh.crop;
+      if (cropData && cropData.width && cropData.height) {
+        let cropW = Math.floor(cropData.width / 2) * 2;
+        let cropH = Math.floor(cropData.height / 2) * 2;
+        let cropX = Math.max(0, Math.min(width - cropW, Math.floor((cropData.x || 0) / 2) * 2));
+        let cropY = Math.max(0, Math.min(height - cropH, Math.floor((cropData.y || 0) / 2) * 2));
 
-      if (cropW > 0 && cropH > 0 && cropW <= width && cropH <= height && (cropW < width || cropH < height || cropX > 0 || cropY > 0)) {
-        cropFilter = `crop=${cropW}:${cropH}:${cropX}:${cropY}`;
-        assWidth = cropW;
-        assHeight = cropH;
-      }
-    }
-
-    fs.writeFileSync(path.join(dir, "captions.ass"), buildAss(fresh.captions, fresh.style, assWidth, assHeight));
-    const out = "captioned.mp4";
-
-    const fontsDir = path.resolve(__dirname, "fonts");
-    const fontconfigDir = path.resolve(__dirname, "fontconfig");
-    const fontconfigFile = path.join(fontconfigDir, "fonts.conf");
-
-    // Configure Fontconfig for Linux / Render
-    process.env.FONTCONFIG_PATH = fontconfigDir;
-    process.env.FONTCONFIG_FILE = fontconfigFile;
-
-    // Relative path to fonts directory from projects/<id> directory
-    const relFontsDir = path.relative(dir, fontsDir).replace(/\\/g, "/");
-
-    const vfFilters = [];
-    if (cropFilter) {
-      vfFilters.push(cropFilter);
-    }
-    vfFilters.push(`ass=filename=captions.ass:fontsdir=${relFontsDir}`);
-
-    await runFfmpeg(
-      ["-i", fresh.video, "-vf", vfFilters.join(","), "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-       "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out],
-      { cwd: dir, duration, onProgress: (progress) => update(p.id, { progress }) }
-    );
-    let exportUrl = null;
-    let exportR2Key = null;
-    if (r2Configured) {
-      exportR2Key = `exports/${p.id}/captioned.mp4`;
-      try {
-        await uploadFileToR2(path.join(dir, out), exportR2Key, "video/mp4");
-        if (process.env.R2_PUBLIC_DEV_URL) {
-          exportUrl = `${process.env.R2_PUBLIC_DEV_URL.replace(/\/$/, "")}/${exportR2Key}`;
+        if (cropW > 0 && cropH > 0 && cropW <= width && cropH <= height && (cropW < width || cropH < height || cropX > 0 || cropY > 0)) {
+          cropFilter = `crop=${cropW}:${cropH}:${cropX}:${cropY}`;
+          assWidth = cropW;
+          assHeight = cropH;
         }
-      } catch (r2Err) {
-        console.warn("Failed to upload export to R2:", r2Err.message);
       }
+
+      fs.writeFileSync(path.join(dir, "captions.ass"), buildAss(fresh.captions, fresh.style, assWidth, assHeight));
+      const out = "captioned.mp4";
+
+      const fontsDir = path.resolve(__dirname, "fonts");
+      const fontconfigDir = path.resolve(__dirname, "fontconfig");
+      const fontconfigFile = path.join(fontconfigDir, "fonts.conf");
+
+      // Configure Fontconfig for Linux / Render
+      process.env.FONTCONFIG_PATH = fontconfigDir;
+      process.env.FONTCONFIG_FILE = fontconfigFile;
+
+      // Relative path to fonts directory from projects/<id> directory
+      const relFontsDir = path.relative(dir, fontsDir).replace(/\\/g, "/");
+
+      const vfFilters = [];
+      if (cropFilter) {
+        vfFilters.push(cropFilter);
+      }
+      vfFilters.push(`ass=filename=captions.ass:fontsdir=${relFontsDir}`);
+
+      await runFfmpeg(
+        ["-i", fresh.video, "-vf", vfFilters.join(","), "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out],
+        { cwd: dir, duration, onProgress: (progress) => update(p.id, { progress }) }
+      );
+      let exportUrl = null;
+      let exportR2Key = null;
+      if (r2Configured) {
+        exportR2Key = `exports/${p.id}/captioned.mp4`;
+        try {
+          await uploadFileToR2(path.join(dir, out), exportR2Key, "video/mp4");
+          if (process.env.R2_PUBLIC_DEV_URL) {
+            exportUrl = `${process.env.R2_PUBLIC_DEV_URL.replace(/\/$/, "")}/${exportR2Key}`;
+          }
+        } catch (r2Err) {
+          console.warn("Failed to upload export to R2:", r2Err.message);
+        }
+      }
+      update(p.id, {
+        status: "ready",
+        progress: 100,
+        exportFile: out,
+        exportR2Key,
+        exportUrl,
+        exportedAt: Date.now()
+      });
+    } catch (err) {
+      console.error("Export failed:", err.message);
+      update(p.id, { status: "ready", error: "Export failed: " + err.message });
+    } finally {
+      activeExports.delete(p.id);
     }
-    update(p.id, {
-      status: "ready",
-      progress: 100,
-      exportFile: out,
-      exportR2Key,
-      exportUrl,
-      exportedAt: Date.now()
-    });
-  })().catch((err) => {
-    console.error("Export failed:", err.message);
-    update(p.id, { status: "ready", error: "Export failed: " + err.message });
-  });
+  })();
 });
 
 app.get("/api/projects/:id/download", (req, res) => {
@@ -976,13 +1003,37 @@ app.get("/api/projects/:id/download", (req, res) => {
   res.download(path.join(projDir(p.id), p.exportFile), `${base}_captioned.mp4`);
 });
 
-// Reset any jobs interrupted by a server restart.
-for (const id of fs.readdirSync(PROJECTS_DIR)) {
-  if (!validId(id) || !fs.existsSync(projFile(id))) continue;
-  const p = load(id);
-  if (["extracting", "transcribing"].includes(p.status)) update(id, { status: "error", error: "Interrupted. Please retry." });
-  if (p.status === "exporting") update(id, { status: "ready", error: "Export interrupted. Please retry." });
+// Reset any jobs interrupted by a server restart (both Supabase & local disk)
+async function resetInterruptedJobs() {
+  if (process.env.SUPABASE_URL) {
+    try {
+      const { data: stuck } = await supabase
+        .from("projects")
+        .select("id, status")
+        .in("status", ["extracting", "transcribing", "converting_hinglish", "converting_bengalish", "exporting"]);
+      if (stuck && stuck.length > 0) {
+        console.log(`Resetting ${stuck.length} interrupted job(s) from Supabase...`);
+        for (const item of stuck) {
+          await supabase.from("projects").update({
+            status: item.status === "exporting" ? "ready" : "error",
+            error: "Job interrupted by server restart. Please retry.",
+            updated_at: new Date().toISOString()
+          }).eq("id", item.id);
+        }
+      }
+    } catch (err) {
+      console.warn("Error resetting interrupted Supabase jobs:", err.message);
+    }
+  }
+
+  for (const id of fs.readdirSync(PROJECTS_DIR)) {
+    if (!validId(id) || !fs.existsSync(projFile(id))) continue;
+    const p = load(id);
+    if (["extracting", "transcribing"].includes(p.status)) update(id, { status: "error", error: "Interrupted. Please retry." });
+    if (p.status === "exporting") update(id, { status: "ready", error: "Export interrupted. Please retry." });
+  }
 }
+resetInterruptedJobs().catch((err) => console.warn("Reset jobs error:", err.message));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Caption Studio running at http://localhost:${PORT}`));

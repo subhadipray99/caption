@@ -500,10 +500,31 @@ function applyStatus(p) {
   }
 
   const exportEl = $("#exportStatus");
-  if (status === "exporting") exportEl.textContent = `Exporting… ${p.progress || 0}%`;
-  else if (p?.error && status === "ready") exportEl.textContent = p.error;
-  else if (p?.exportFile && status === "ready") exportEl.innerHTML = `<a href="/api/projects/${p.id}/download">Download last export</a>`;
-  else if (!p) exportEl.textContent = "";
+  if (status === "exporting") {
+    exportEl.innerHTML = `<span>Exporting… ${p.progress || 0}%</span> <button type="button" class="btn btn-secondary btn-xs" id="resetExportBtn" style="margin-left:8px;padding:2px 8px;font-size:11px;cursor:pointer;">Reset</button>`;
+    const resetBtn = $("#resetExportBtn");
+    if (resetBtn) {
+      resetBtn.onclick = async (e) => {
+        e.stopPropagation();
+        resetBtn.disabled = true;
+        resetBtn.textContent = "Resetting…";
+        try {
+          await api(`/api/projects/${p.id}/reset-status`, { method: "POST" });
+          const updated = await api(`/api/projects/${p.id}`);
+          applyStatus(updated);
+          toast("Export status reset. You can export now.");
+        } catch (err) {
+          toast("Reset failed: " + err.message);
+        }
+      };
+    }
+  } else if (p?.error && status === "ready") {
+    exportEl.textContent = p.error;
+  } else if (p?.exportFile && status === "ready") {
+    exportEl.innerHTML = `<a href="/api/projects/${p.id}/download">Download last export</a>`;
+  } else if (!p) {
+    exportEl.textContent = "";
+  }
 
   const ready = status === "ready";
   $("#exportBtn").disabled = !ready || !state.captions.length;
@@ -1585,7 +1606,8 @@ $("#exportBtn").onclick = async () => {
         height: video.videoHeight,
         duration: duration(),
         style,
-        crop: crop.active ? crop : null
+        crop: crop.active ? crop : null,
+        force: true
       }),
     });
     applyStatus(p);
