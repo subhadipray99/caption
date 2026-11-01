@@ -948,7 +948,51 @@ app.post("/api/projects/:id/export", (req, res) => {
       const fontconfigDir = path.resolve(__dirname, "fontconfig");
       const fontconfigFile = path.join(fontconfigDir, "fonts.conf");
 
-      // Configure Fontconfig for Linux / Render
+      // Configure Fontconfig with absolute fonts path for Linux / Render
+      try {
+        fs.mkdirSync(fontconfigDir, { recursive: true });
+        const absFontsPath = fontsDir.replace(/\\/g, "/");
+        fs.writeFileSync(
+          fontconfigFile,
+          `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <dir>${absFontsPath}</dir>
+  <dir prefix="cwd">fonts</dir>
+  <dir>/opt/render/project/src/fonts</dir>
+  <dir>/usr/share/fonts</dir>
+  <dir>/usr/local/share/fonts</dir>
+  <cachedir>/tmp/fontconfig-cache</cachedir>
+
+  <match target="pattern">
+    <test qual="any" name="family"><string>sans-serif</string></test>
+    <edit name="family" mode="prepend" binding="strong">
+      <string>Montserrat</string>
+    </edit>
+  </match>
+
+  <alias>
+    <family>Nirmala UI</family>
+    <prefer>
+      <family>Noto Sans Devanagari</family>
+      <family>Noto Sans Bengali</family>
+      <family>Noto Sans Tamil</family>
+      <family>Noto Sans Telugu</family>
+      <family>Noto Sans Gujarati</family>
+      <family>Noto Sans Kannada</family>
+      <family>Noto Sans Malayalam</family>
+      <family>Noto Sans Gurmukhi</family>
+    </prefer>
+  </alias>
+
+  <config></config>
+</fontconfig>
+`
+        );
+      } catch (fcErr) {
+        console.warn("Could not write dynamic fonts.conf:", fcErr.message);
+      }
+
       process.env.FONTCONFIG_PATH = fontconfigDir;
       process.env.FONTCONFIG_FILE = fontconfigFile;
 
