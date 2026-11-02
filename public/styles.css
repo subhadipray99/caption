@@ -1534,3 +1534,288 @@ dialog.billing-dialog::backdrop {
   pointer-events: none;
   letter-spacing: 0.4px;
 }
+
+/* ==========================================================================
+   Export Completion & Social Share Modal
+   ========================================================================== */
+dialog.export-dialog:modal,
+dialog.export-dialog[open] {
+  border: 1px solid #e2e8f0;
+  padding: 0;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #090d16;
+  box-shadow: 0 28px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  max-width: 520px;
+  width: 92vw;
+  margin: auto;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+dialog.export-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  overscroll-behavior: contain;
+}
+
+.export-modal-inner {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+/* Header */
+.export-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.export-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.export-celebration-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+}
+
+.export-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.export-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.export-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.export-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: scale(1.05);
+}
+
+/* Video Preview */
+.export-preview-container {
+  width: 100%;
+  background: #090d16;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 340px;
+  border: 1px solid #1e293b;
+}
+
+.export-video-player {
+  width: 100%;
+  max-height: 340px;
+  display: block;
+  object-fit: contain;
+}
+
+/* Actions Row */
+.export-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+.export-download-btn {
+  flex: 1.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.export-newtab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 10px;
+  text-decoration: none;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.export-newtab-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Share with the world */
+.share-world-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.share-world-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.share-world-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.share-world-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.share-world-subtitle {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.share-quote-box {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #475569;
+  font-style: italic;
+}
+
+.social-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .social-share-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.social-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.social-share-btn svg {
+  flex-shrink: 0;
+}
+
+.social-share-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Individual Brand Hover Tints */
+.social-share-btn.share-x:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.social-share-btn.share-whatsapp:hover {
+  background: #25d366;
+  color: #ffffff;
+  border-color: #25d366;
+}
+
+.social-share-btn.share-linkedin:hover {
+  background: #0a66c2;
+  color: #ffffff;
+  border-color: #0a66c2;
+}
+
+.social-share-btn.share-facebook:hover {
+  background: #1877f2;
+  color: #ffffff;
+  border-color: #1877f2;
+}
+
+.social-share-btn.share-reddit:hover {
+  background: #ff4500;
+  color: #ffffff;
+  border-color: #ff4500;
+}
+
+.social-share-btn.share-copy:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.social-share-btn.copied {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}

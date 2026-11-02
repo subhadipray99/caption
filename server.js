@@ -1040,11 +1040,37 @@ app.post("/api/projects/:id/export", (req, res) => {
   })();
 });
 
-app.get("/api/projects/:id/download", (req, res) => {
-  const p = load(req.params.id);
-  if (!p.exportFile) return res.status(404).json({ error: "Not exported yet" });
-  const base = path.parse(p.name).name;
-  res.download(path.join(projDir(p.id), p.exportFile), `${base}_captioned.mp4`);
+app.get("/api/projects/:id/download", async (req, res) => {
+  const p = fs.existsSync(projFile(req.params.id)) ? load(req.params.id) : null;
+  const base = p && p.name ? path.parse(p.name).name : "video";
+  const localFile = p && p.exportFile ? path.join(projDir(p.id), p.exportFile) : null;
+
+  if (localFile && fs.existsSync(localFile)) {
+    return res.download(localFile, `${base}_captioned.mp4`);
+  }
+
+  if (p && p.exportUrl) {
+    return res.redirect(p.exportUrl);
+  }
+
+  // Fallback to Supabase if local metadata or disk file was cleared on ephemeral container restart
+  if (process.env.SUPABASE_URL) {
+    try {
+      const { data: sp } = await supabase
+        .from("projects")
+        .select("name, export_url, export_storage_path")
+        .eq("id", req.params.id)
+        .maybeSingle();
+
+      if (sp && sp.export_url) {
+        return res.redirect(sp.export_url);
+      }
+    } catch (dbErr) {
+      console.warn("Could not query Supabase for export_url:", dbErr.message);
+    }
+  }
+
+  res.status(404).json({ error: "Exported video not found. Please re-export." });
 });
 
 // Reset any jobs interrupted by a server restart (both Supabase & local disk)

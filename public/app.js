@@ -460,7 +460,7 @@ function applyStatus(p) {
     // Export finished.
     if (p.exportedAt && p.exportedAt !== state.lastExportedAt) {
       state.lastExportedAt = p.exportedAt;
-      location.href = p.exportUrl || `${API_BASE}/api/projects/${p.id}/download`;
+      openExportModal(p);
     }
     Object.assign(state.current, { ...p, captions: undefined });
   }
@@ -521,7 +521,11 @@ function applyStatus(p) {
   } else if (p?.error && status === "ready") {
     exportEl.textContent = p.error;
   } else if (p?.exportFile && status === "ready") {
-    exportEl.innerHTML = `<a href="/api/projects/${p.id}/download">Download last export</a>`;
+    exportEl.innerHTML = `<button type="button" class="btn btn-secondary btn-xs" id="viewExportBtn" style="padding:2px 8px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>View & Download Video</span></button>`;
+    const viewBtn = $("#viewExportBtn");
+    if (viewBtn) {
+      viewBtn.onclick = () => openExportModal(p);
+    }
   } else if (!p) {
     exportEl.textContent = "";
   }
@@ -1991,10 +1995,127 @@ function initBilling() {
   }
 }
 
+// ---------------- Export Modal & Social Share ----------------
+function openExportModal(p = state.current) {
+  const modal = $("#exportSuccessModal");
+  if (!modal || !p) return;
+
+  const exportUrl = p.exportUrl || `${API_BASE}/api/projects/${p.id}/download`;
+  const exportVideo = $("#exportModalVideo");
+  if (exportVideo) {
+    if (exportVideo.src !== exportUrl) {
+      exportVideo.src = exportUrl;
+      exportVideo.load();
+    }
+  }
+
+  // Configure Download Button
+  const dlBtn = $("#downloadExportBtn");
+  if (dlBtn) {
+    dlBtn.href = `${API_BASE}/api/projects/${p.id}/download`;
+    const baseName = (p.name || "video").replace(/\.[^.]+$/, "");
+    dlBtn.setAttribute("download", `${baseName}_captioned.mp4`);
+  }
+
+  // Configure Open in New Tab
+  const newTabBtn = $("#openExportNewTabBtn");
+  if (newTabBtn) {
+    newTabBtn.href = exportUrl;
+  }
+
+  // Pre-filled viral message about Buzy SI
+  const shareText = "Have you tried Buzy SI? 🚀 It automatically adds viral captions, highlights, and animations to videos in seconds! Check it out:";
+  const shareUrl = "https://buzy.si";
+  const fullShareMessage = `${shareText} ${shareUrl}`;
+
+  // Configure Social Sharing Links
+  const twitterBtn = $("#shareTwitterBtn");
+  if (twitterBtn) {
+    twitterBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+  }
+
+  const waBtn = $("#shareWhatsAppBtn");
+  if (waBtn) {
+    waBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullShareMessage)}`;
+  }
+
+  const linkedinBtn = $("#shareLinkedInBtn");
+  if (linkedinBtn) {
+    linkedinBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  }
+
+  const fbBtn = $("#shareFacebookBtn");
+  if (fbBtn) {
+    fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+  }
+
+  const redditBtn = $("#shareRedditBtn");
+  if (redditBtn) {
+    redditBtn.href = `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`;
+  }
+
+  // Copy Link Button handler
+  const copyBtn = $("#shareCopyBtn");
+  const copyText = $("#shareCopyText");
+  if (copyBtn) {
+    copyBtn.classList.remove("copied");
+    if (copyText) copyText.textContent = "Copy Link";
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(fullShareMessage);
+        copyBtn.classList.add("copied");
+        if (copyText) copyText.textContent = "Copied! 👍";
+        toast("Share message copied to clipboard!");
+        setTimeout(() => {
+          copyBtn.classList.remove("copied");
+          if (copyText) copyText.textContent = "Copy Link";
+        }, 3000);
+      } catch (err) {
+        toast("Link: " + shareUrl);
+      }
+    };
+  }
+
+  if (typeof modal.showModal === "function") {
+    try { modal.showModal(); } catch (e) { modal.setAttribute("open", ""); }
+  } else {
+    modal.setAttribute("open", "");
+  }
+}
+
+function closeExportModal() {
+  const modal = $("#exportSuccessModal");
+  if (modal) {
+    const exportVideo = $("#exportModalVideo");
+    if (exportVideo) {
+      exportVideo.pause();
+    }
+    if (typeof modal.close === "function" && modal.open) {
+      try { modal.close(); } catch (e) { modal.removeAttribute("open"); }
+    } else {
+      modal.removeAttribute("open");
+    }
+  }
+}
+
+function initExportModal() {
+  const closeBtn = $("#closeExportModalBtn");
+  if (closeBtn) {
+    closeBtn.onclick = closeExportModal;
+  }
+  const modal = $("#exportSuccessModal");
+  if (modal) {
+    modal.onclick = (e) => {
+      if (e.target === modal) closeExportModal();
+    };
+  }
+}
+
 // ---------------- boot ----------------
 syncStyleControls();
 syncCropControls();
 initCrop();
 initBilling();
+initExportModal();
 loadUserBalance();
 loadProjects().then(() => { if (state.projects[0]) openProject(state.projects[0].id); });
